@@ -1,0 +1,56 @@
+project:
+  name: nla-code-semantics
+  seed: 42
+
+hardware:
+  device: cuda
+  mixed_precision: bf16
+
+models:
+  smoke_test:
+    name_or_path: Qwen/Qwen2.5-Coder-0.5B-Instruct
+    suggested_layer_index: 16
+  main:
+    name_or_path: Qwen/Qwen2.5-Coder-1.5B-Instruct
+    suggested_layer_index: 19
+
+data:
+  max_length: 128
+  train_size: 5000
+  validation_size: 500
+  test_size: 500
+  raw_dir: data/raw
+  processed_dir: data/processed
+
+activations:
+  representation: residual_stream_hidden_state
+  token_position: final_non_padding
+  output_dir: outputs/activations
+
+prompts:
+  template_name: code_explanation_prompt_v1
+  max_explanation_tokens: 48
+
+training:
+  batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 2.0e-5
+  num_epochs: 1
+  lora:
+    enabled: true
+    r: 8
+    alpha: 16
+    dropout: 0.05
+
+evaluation:
+  metric: fve
+  baselines:
+    - mean_activation
+    - random_activation
+    - shuffled_explanation
+    - direct_prompt_to_activation
+
+paths:
+  checkpoints_dir: outputs/checkpoints
+  figures_dir: outputs/figures
+  reports_dir: outputs/reports
