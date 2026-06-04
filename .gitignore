@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environments
+.venv/
+venv/
+env/
+.env
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Models, datasets, and generated artifacts
+models/
+checkpoints/
+artifacts/
+outputs/
+reports/generated/
+data/raw/
+data/processed/
+data/activations/
+data/cache/
+wandb/
+mlruns/
+
+# Large files
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+*.npz
+*.npy
+*.parquet
+*.arrow
