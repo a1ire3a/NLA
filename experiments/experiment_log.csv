@@ -1,0 +1,2 @@
+experiment_id,date,status,stage,model_name,model_size,layer_index,token_position,dataset,split,num_examples,activation_dim,method,baseline,train_steps,batch_size,learning_rate,seed,primary_metric,primary_metric_value,notes,artifact_path
+exp_000,YYYY-MM-DD,planned,scaffold,Qwen/Qwen2.5-Coder-0.5B-Instruct,0.5B,16,final_non_padding,pilot,smoke,0,,feasibility_probe,,0,, ,42,FVE,,Initial placeholder experiment,outputs/
