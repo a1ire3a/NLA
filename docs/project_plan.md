@@ -6,7 +6,7 @@ This document is the active roadmap for the project. These phase numbers are the
 
 **Current phase:** Phase 8 — Connect the full NLA loop.
 
-**Immediate next step:** evaluate the path `activation -> AV generated explanation -> AR -> reconstructed activation -> FVE`.
+**Immediate next step:** run the full NLA loop again with the reference-description AR checkpoint to isolate AR/AV text-distribution mismatch.
 
 ## Phase 1 — Define research question and scope
 
@@ -45,22 +45,7 @@ This document is the active roadmap for the project. These phase numbers are the
 
 ## Phase 5 — Metrics, baselines, and AR pilot
 
-### Phase 5a — Pilot metrics and baselines
-
 **Status:** Complete.
-
-### Phase 5b — AR pilot and diagnostics
-
-| Setup | Text field | Target transform | Validation FVE | Beats train-mean baseline? |
-|---|---|---|---:|---|
-| refdesc raw | `reference_description` | raw | -5.110613 | no |
-| refdesc center | `reference_description` | center | -0.272226 | no |
-| refdesc standardize | `reference_description` | standardize | 0.056828 | yes |
-| code center | `code` | center | -0.032409 | yes |
-
-**Decision:** Use target standardization for AR training.
-
-**Status:** Complete for pilot.
 
 ## Phase 6 — Scale activations and train AR on larger data
 
@@ -71,16 +56,12 @@ This document is the active roadmap for the project. These phase numbers are the
 | `train_qwen25_coder_15b_l19_ctx512` | 5000 | `(5000, 1536)` | 368 | Complete |
 | `validation_qwen25_coder_15b_l19_ctx512` | 500 | `(500, 1536)` | 51 | Complete |
 
-**Report:** `docs/phase_results/phase_06_scaled_activation_extraction.md`
-
 ### Phase 6b — Scaled baselines
 
 | Run | Baseline | FVE | MSE |
 |---|---|---:|---:|
 | train | mean | 0.000000 | 0.176965 |
 | validation using train reference | train mean | -0.005988 | 0.235964 |
-
-**Report:** `docs/phase_results/phase_06b_scaled_baselines.md`
 
 ### Phase 6c — AR training on larger data
 
@@ -89,26 +70,17 @@ This document is the active roadmap for the project. These phase numbers are the
 | refdesc DistilBERT frozen | `reference_description` | standardize | 12 | 0.095719 | 0.460551 | yes |
 | code DistilBERT frozen | `code` | standardize | 20 | 0.238927 | 0.422512 | yes |
 
-**Reports:**
-
-- `docs/phase_results/phase_06c_scaled_ar_refdesc.md`
-- `docs/phase_results/phase_06c_scaled_ar_code.md`
-
-**Decision:** The current AR baseline is sufficient for proceeding to the first AV implementation. The best AR setting uses `text_field=code`, `target_transform=standardize`, and a frozen DistilBERT encoder.
+**Decision:** The current AR baseline is sufficient for proceeding to the first AV implementation.
 
 **Status:** Complete enough for first NLA implementation.
 
 ## Phase 7 — Implement AV
-
-**Goal:** Implement the first Activation Verbalizer that maps activation vectors to natural-language explanations.
 
 | Setup | Target field | LM | Epochs | Best validation loss | Status |
 |---|---|---|---:|---:|---|
 | supervised AV baseline | `reference_description` | `distilgpt2` | 5 | 3.098751 | Complete |
 
 **Report:** `docs/phase_results/phase_07_av_baseline.md`
-
-**Decision:** AV is good enough for the first full NLA loop. Do not repeat AV training before testing the loop.
 
 **Status:** Complete enough for first NLA implementation.
 
@@ -120,13 +92,22 @@ This document is the active roadmap for the project. These phase numbers are the
 activation -> AV generated explanation -> AR -> reconstructed activation -> FVE
 ```
 
-**Inputs:**
+### Phase 8a — AV-to-code-AR loop
 
-- AV checkpoint: `outputs/checkpoints/av/train5000_val500_qwen25_coder_15b_l19_ctx512_refdesc_distilgpt2`
-- AR checkpoint: `outputs/checkpoints/ar/train5000_val500_qwen25_coder_15b_l19_ctx512_code_distilbert_standardize`
-- Validation activations: `outputs/activations/validation_qwen25_coder_15b_l19_ctx512`
+| Method | FVE | MSE |
+|---|---:|---:|
+| NLA loop | -0.353821 | 0.317551 |
+| mean baseline | 0.000000 | 0.234559 |
+| zero baseline | -6.041395 | 1.651625 |
+| shuffled baseline | -1.052512 | 0.481436 |
 
-**Status:** Current phase.
+**Report:** `docs/phase_results/phase_08_full_nla_loop.md`
+
+**Interpretation:** The loop runs end-to-end but does not beat the mean baseline. The likely issue is text-distribution mismatch: the AR checkpoint used here was trained on code text, while the AV produces natural-language explanations.
+
+**Next diagnostic:** Run the same loop using the reference-description AR checkpoint.
+
+**Status:** In progress.
 
 ## Phase 9 — Controlled evaluations
 
