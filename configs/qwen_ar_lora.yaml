@@ -1,0 +1,26 @@
+phase: 10a
+name: qwen_ar_lora_refdesc_smoke
+
+activation_dir: outputs/activations/train_qwen25_coder_15b_l19_ctx512
+validation_activation_dir: outputs/activations/validation_qwen25_coder_15b_l19_ctx512
+output_dir: outputs/checkpoints/qwen_ar/smoke_refdesc_qwen05b_lora
+
+model_name_or_path: Qwen/Qwen2.5-Coder-0.5B-Instruct
+text_field: reference_description
+fallback_text_fields: prompt,code
+target_transform: standardize
+
+training:
+  epochs: 1
+  batch_size: 2
+  learning_rate: 2.0e-4
+  max_length: 256
+  dtype: bfloat16
+  seed: 42
+  limit_train: 128
+  limit_validation: 64
+
+lora:
+  r: 8
+  alpha: 16
+  dropout: 0.05
