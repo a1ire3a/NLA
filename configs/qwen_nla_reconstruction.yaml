@@ -1,0 +1,36 @@
+phase: 10c
+name: qwen_nla_generated_text_ar_adaptation_smoke
+
+activation_dir: outputs/activations/train_qwen25_coder_15b_l19_ctx512
+validation_activation_dir: outputs/activations/validation_qwen25_coder_15b_l19_ctx512
+qwen_av_checkpoint_dir: outputs/checkpoints/qwen_av/smoke_refdesc_qwen05b_lora
+qwen_ar_checkpoint_dir: outputs/checkpoints/qwen_ar/smoke_refdesc_qwen05b_lora
+output_dir: outputs/checkpoints/qwen_nla/smoke_qwen05b_generated_text_ar_adapt
+
+model_name_or_path: Qwen/Qwen2.5-Coder-0.5B-Instruct
+
+adaptation:
+  limit_train: 64
+  limit_validation: 32
+  epochs: 1
+  batch_size: 2
+  learning_rate: 2.0e-4
+  max_new_tokens: 128
+  max_ar_length: 256
+  seed: 42
+
+loop_before:
+  output_dir: outputs/reports/qwen_nla_loop
+  run_name: smoke_qwen05b_before_adaptation
+  limit: 32
+  batch_size: 2
+  max_new_tokens: 128
+  seed: 42
+
+loop_after:
+  output_dir: outputs/reports/qwen_nla_loop
+  run_name: smoke_qwen05b_after_adaptation
+  limit: 32
+  batch_size: 2
+  max_new_tokens: 128
+  seed: 42

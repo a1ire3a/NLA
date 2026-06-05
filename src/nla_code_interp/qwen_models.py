@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -49,6 +50,87 @@ class LoraSettings:
         }
 
 
+@dataclass(frozen=True)
+class QwenTargetTransform:
+    """Target-space transform restored from a Qwen AR checkpoint."""
+
+    name: str
+    mean: torch.Tensor | None = None
+    std: torch.Tensor | None = None
+    eps: float = 1e-6
+
+    def transform(self, targets: torch.Tensor) -> torch.Tensor:
+        targets = validate_activation_matrix(targets, "targets")
+        if self.name == "raw":
+            return targets.clone()
+        if self.mean is None:
+            raise ValueError(f"Target transform {self.name!r} is missing mean.")
+        mean = self.mean.to(device=targets.device, dtype=targets.dtype)
+        centered = targets - mean
+        if self.name == "center":
+            return centered
+        if self.std is None:
+            raise ValueError("standardize target transform is missing std.")
+        std = self.std.to(device=targets.device, dtype=targets.dtype)
+        return centered / std
+
+    def inverse_transform(self, predictions: torch.Tensor) -> torch.Tensor:
+        predictions = validate_activation_matrix(predictions, "predictions")
+        if self.name == "raw":
+            return predictions.clone()
+        if self.mean is None:
+            raise ValueError(f"Target transform {self.name!r} is missing mean.")
+        mean = self.mean.to(device=predictions.device, dtype=predictions.dtype)
+        if self.name == "center":
+            return predictions + mean
+        if self.std is None:
+            raise ValueError("standardize target transform is missing std.")
+        std = self.std.to(device=predictions.device, dtype=predictions.dtype)
+        return predictions * std + mean
+
+    def state_dict_for_checkpoint(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "eps": self.eps,
+            "mean": self.mean.detach().cpu() if self.mean is not None else None,
+            "std": self.std.detach().cpu() if self.std is not None else None,
+        }
+
+    def state_dict_for_manifest(self) -> dict[str, Any]:
+        state: dict[str, Any] = {"name": self.name, "eps": self.eps}
+        if self.mean is not None:
+            mean = self.mean.detach().cpu().float()
+            state.update({"mean_shape": list(mean.shape), "mean_norm": mean.norm().item()})
+        if self.std is not None:
+            std = self.std.detach().cpu().float()
+            state.update(
+                {
+                    "std_shape": list(std.shape),
+                    "std_mean": std.mean().item(),
+                    "std_min": std.min().item(),
+                    "std_max": std.max().item(),
+                }
+            )
+        return state
+
+
+@dataclass(frozen=True)
+class QwenAVCheckpointBundle:
+    model: "QwenActivationVerbalizer"
+    tokenizer: Any
+    config: dict[str, Any]
+    checkpoint: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class QwenARCheckpointBundle:
+    model: "QwenActivationReconstructor"
+    tokenizer: Any
+    target_transform: QwenTargetTransform
+    config: dict[str, Any]
+    checkpoint: dict[str, Any]
+
+
 def dtype_from_name(dtype_name: str) -> torch.dtype:
     mapping = {
         "float32": torch.float32,
@@ -58,6 +140,51 @@ def dtype_from_name(dtype_name: str) -> torch.dtype:
     if dtype_name not in mapping:
         raise ValueError(f"Unsupported dtype {dtype_name!r}; expected one of {sorted(mapping)}")
     return mapping[dtype_name]
+
+
+def validate_activation_matrix(tensor: torch.Tensor, name: str) -> torch.Tensor:
+    if not isinstance(tensor, torch.Tensor):
+        raise TypeError(f"{name} must be a torch.Tensor, got {type(tensor)}")
+    if tensor.ndim != 2:
+        raise ValueError(f"{name} must have shape [num_examples, activation_dim]")
+    if tensor.shape[0] == 0 or tensor.shape[1] == 0:
+        raise ValueError(f"{name} must be non-empty, got {tuple(tensor.shape)}")
+    return tensor.detach().float()
+
+
+def tensor_from_transform_state(value: Any, *, name: str) -> torch.Tensor | None:
+    if value is None:
+        return None
+    if isinstance(value, torch.Tensor):
+        tensor = value.detach().cpu().float()
+    elif isinstance(value, list):
+        tensor = torch.tensor(value, dtype=torch.float32)
+    else:
+        raise TypeError(f"target_transform_state[{name!r}] must be a tensor or list.")
+    if tensor.ndim == 1:
+        tensor = tensor.unsqueeze(0)
+    if tensor.ndim != 2 or tensor.shape[0] != 1:
+        raise ValueError(
+            f"target_transform_state[{name!r}] must have shape [1, activation_dim] "
+            f"or [activation_dim], got {tuple(tensor.shape)}"
+        )
+    return tensor
+
+
+def target_transform_from_checkpoint_state(state: dict[str, Any]) -> QwenTargetTransform:
+    if not isinstance(state, dict):
+        raise TypeError(f"target_transform_state must be a dict, got {type(state)}")
+    name = state.get("name")
+    if name not in {"raw", "center", "standardize"}:
+        raise ValueError(f"Unsupported target transform in checkpoint: {name!r}")
+    mean = tensor_from_transform_state(state.get("mean"), name="mean")
+    std = tensor_from_transform_state(state.get("std"), name="std")
+    eps = float(state.get("eps", 1e-6))
+    if name in {"center", "standardize"} and mean is None:
+        raise ValueError(f"{name} target transform checkpoint is missing mean.")
+    if name == "standardize" and std is None:
+        raise ValueError("standardize target transform checkpoint is missing std.")
+    return QwenTargetTransform(name=name, mean=mean, std=std, eps=eps)
 
 
 def infer_hidden_size(model: nn.Module) -> int:
@@ -203,6 +330,168 @@ def load_qwen_causal_lm(
             torch_dtype=dtype,
             **kwargs,
         )
+
+
+def load_checkpoint_payload(checkpoint_dir: Path, *, device: torch.device | str) -> dict[str, Any]:
+    checkpoint_path = checkpoint_dir / "model.pt"
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(f"Missing Qwen checkpoint file: {checkpoint_path}")
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    if not isinstance(checkpoint, dict):
+        raise TypeError(f"Expected dict in {checkpoint_path}, got {type(checkpoint)}")
+    config = checkpoint.get("config")
+    if not isinstance(config, dict):
+        raise ValueError(f"{checkpoint_path} is missing config.")
+    output_files = checkpoint.get("output_files")
+    if not isinstance(output_files, dict):
+        raise ValueError(f"{checkpoint_path} is missing output_files.")
+    return checkpoint
+
+
+def load_qwen_tokenizer_from_checkpoint(
+    *,
+    checkpoint_dir: Path,
+    config: dict[str, Any],
+    output_files: dict[str, Any],
+):
+    try:
+        from transformers import AutoTokenizer
+    except ImportError as exc:
+        raise RuntimeError(
+            "Could not import transformers. Install project dependencies with "
+            "`pip install -r requirements.txt`."
+        ) from exc
+
+    tokenizer_path = checkpoint_dir / output_files.get("tokenizer", "tokenizer")
+    tokenizer_source = (
+        str(tokenizer_path) if tokenizer_path.exists() else config["model_name_or_path"]
+    )
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_source)
+    if tokenizer.pad_token_id is None:
+        if tokenizer.eos_token is None:
+            raise ValueError("Tokenizer has no pad token and no eos token.")
+        tokenizer.pad_token = tokenizer.eos_token
+    return tokenizer
+
+
+def load_qwen_model_from_checkpoint(
+    *,
+    checkpoint_dir: Path,
+    config: dict[str, Any],
+    output_files: dict[str, Any],
+    adapter_trainable: bool = False,
+) -> nn.Module:
+    qwen_model = load_qwen_causal_lm(
+        model_name_or_path=config["model_name_or_path"],
+        dtype=dtype_from_name(config.get("dtype", "bfloat16")),
+    )
+    lora_config = config.get("lora", {})
+    if lora_config.get("enabled", False):
+        try:
+            from peft import PeftModel
+        except ImportError as exc:
+            raise RuntimeError(
+                "Could not import peft. Install project dependencies with "
+                "`pip install -r requirements.txt`."
+            ) from exc
+        adapter_dir = checkpoint_dir / output_files.get("qwen_adapter", "qwen_adapter")
+        if not adapter_dir.exists():
+            raise FileNotFoundError(f"Missing Qwen adapter directory: {adapter_dir}")
+        return PeftModel.from_pretrained(
+            qwen_model,
+            adapter_dir,
+            is_trainable=adapter_trainable,
+        )
+
+    if "qwen_model_state" in output_files:
+        state_path = checkpoint_dir / output_files["qwen_model_state"]
+        qwen_model.load_state_dict(torch.load(state_path, map_location="cpu"))
+    for parameter in qwen_model.parameters():
+        parameter.requires_grad = False
+    return qwen_model
+
+
+def load_qwen_av_checkpoint(
+    *,
+    checkpoint_dir: Path,
+    device: torch.device,
+    adapter_trainable: bool = False,
+) -> QwenAVCheckpointBundle:
+    checkpoint = load_checkpoint_payload(checkpoint_dir, device=device)
+    config = checkpoint["config"]
+    if config.get("component") != "qwen_av":
+        raise ValueError(f"Expected qwen_av checkpoint, got {config.get('component')!r}")
+    output_files = checkpoint["output_files"]
+    tokenizer = load_qwen_tokenizer_from_checkpoint(
+        checkpoint_dir=checkpoint_dir,
+        config=config,
+        output_files=output_files,
+    )
+    qwen_model = load_qwen_model_from_checkpoint(
+        checkpoint_dir=checkpoint_dir,
+        config=config,
+        output_files=output_files,
+        adapter_trainable=adapter_trainable,
+    )
+    model = QwenActivationVerbalizer(
+        qwen_model=qwen_model,
+        activation_dim=int(config["activation_dim"]),
+    )
+    projection_path = checkpoint_dir / output_files["activation_projection"]
+    model.activation_projection.load_state_dict(
+        torch.load(projection_path, map_location="cpu")
+    )
+    model = model.to(device)
+    model.eval()
+    return QwenAVCheckpointBundle(
+        model=model,
+        tokenizer=tokenizer,
+        config=config,
+        checkpoint=checkpoint,
+    )
+
+
+def load_qwen_ar_checkpoint(
+    *,
+    checkpoint_dir: Path,
+    device: torch.device,
+    adapter_trainable: bool = False,
+) -> QwenARCheckpointBundle:
+    checkpoint = load_checkpoint_payload(checkpoint_dir, device=device)
+    config = checkpoint["config"]
+    if config.get("component") != "qwen_ar":
+        raise ValueError(f"Expected qwen_ar checkpoint, got {config.get('component')!r}")
+    output_files = checkpoint["output_files"]
+    transform_state = checkpoint.get("target_transform_state")
+    if not isinstance(transform_state, dict):
+        raise ValueError(f"{checkpoint_dir / 'model.pt'} is missing target_transform_state.")
+    tokenizer = load_qwen_tokenizer_from_checkpoint(
+        checkpoint_dir=checkpoint_dir,
+        config=config,
+        output_files=output_files,
+    )
+    qwen_model = load_qwen_model_from_checkpoint(
+        checkpoint_dir=checkpoint_dir,
+        config=config,
+        output_files=output_files,
+        adapter_trainable=adapter_trainable,
+    )
+    model = QwenActivationReconstructor(
+        qwen_model=qwen_model,
+        activation_dim=int(config["activation_dim"]),
+        pooling=config.get("pooling", "final"),
+    )
+    projection_path = checkpoint_dir / output_files["projection_head"]
+    model.projection.load_state_dict(torch.load(projection_path, map_location="cpu"))
+    model = model.to(device)
+    model.eval()
+    return QwenARCheckpointBundle(
+        model=model,
+        tokenizer=tokenizer,
+        target_transform=target_transform_from_checkpoint_state(transform_state),
+        config=config,
+        checkpoint=checkpoint,
+    )
 
 
 class QwenActivationReconstructor(nn.Module):
