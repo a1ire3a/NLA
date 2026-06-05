@@ -8,6 +8,18 @@ The project investigates whether a simplified NLA can translate internal activat
 
 Can a simplified natural language autoencoder recover meaningful information from the residual-stream activations of a small code language model, and do the resulting explanations reflect code semantics rather than only superficial syntax?
 
+## Implementation stance
+
+This repository is **not** a fork of the official NLA repository. It is a clean, small-scale implementation inspired by the official NLA work and adapted to a single-GPU AI4Code setting.
+
+The official implementation is treated as a reference for terminology, architecture, and evaluation design:
+
+- Official NLA repository: https://github.com/kitft/natural_language_autoencoders
+- Source usage policy: `docs/source_usage.md`
+- Local-to-official design mapping: `docs/reference_mapping.md`
+
+If code is copied or closely adapted from the official repository, the relevant file must include explicit attribution and license notes.
+
 ## Initial scope
 
 - **Target model:** `Qwen/Qwen2.5-Coder-1.5B-Instruct`
