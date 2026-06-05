@@ -5,6 +5,22 @@ from __future__ import annotations
 import torch
 
 
+def activation_save_dtype(dtype_name: str) -> torch.dtype:
+    """Resolve a supported activation save dtype name to a torch dtype."""
+    mapping = {
+        "float32": torch.float32,
+        "float16": torch.float16,
+        "bfloat16": torch.bfloat16,
+    }
+    try:
+        return mapping[dtype_name]
+    except KeyError as exc:
+        allowed = ", ".join(sorted(mapping))
+        raise ValueError(
+            f"Unsupported activation save dtype {dtype_name!r}; allowed: {allowed}"
+        ) from exc
+
+
 def select_final_non_padding_indices(attention_mask: torch.Tensor) -> torch.Tensor:
     """Return the final non-padding token index for each sequence.
 
@@ -89,4 +105,23 @@ def summarize_activation(activation: torch.Tensor) -> dict[str, float]:
         "min": values.min().item(),
         "max": values.max().item(),
         "l2_norm": values.norm(p=2).item(),
+    }
+
+
+def summarize_activation_batch(activations: torch.Tensor) -> dict[str, float]:
+    """Return summary statistics for a batch of activation vectors."""
+    if activations.ndim != 2:
+        raise ValueError(
+            f"activations must have shape [num_examples, hidden_dim], got {activations.shape}"
+        )
+    if activations.shape[0] == 0 or activations.shape[1] == 0:
+        raise ValueError(f"activations must be non-empty, got {activations.shape}")
+
+    values = activations.detach().float()
+    return {
+        "mean": values.mean().item(),
+        "std": values.std(unbiased=False).item(),
+        "min": values.min().item(),
+        "max": values.max().item(),
+        "average_l2_norm": values.norm(p=2, dim=1).mean().item(),
     }

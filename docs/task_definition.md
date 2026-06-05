@@ -74,6 +74,19 @@ The prompt is constructed with `code_explanation_prompt_v1(code)`. The
 identifier-renamed surface shift, a formatting/comment-only shift, or a
 language-shift example.
 
+### Activation artifact schema
+
+Activation extraction writes one artifact directory per model/layer/dataset run:
+
+- `activations.pt`: CPU tensor with shape `[num_examples, activation_dim]`
+- `metadata.jsonl`: one metadata row per activation
+- `manifest.json`: run configuration, counts, tensor shape, and summary statistics
+
+Metadata rows preserve the processed dataset fields and add activation-specific
+fields such as `activation_index`, `model_name_or_path`, `layer_index`,
+`token_position`, `input_num_tokens`, `was_truncated`, `activation_dim`, and
+`activation_dtype`.
+
 ## Required outputs
 
 The project should produce:
