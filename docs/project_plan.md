@@ -4,9 +4,9 @@ This document is the active roadmap for the project. These phase numbers are the
 
 ## Current Phase
 
-**Current phase:** Phase 6c — Train AR on larger data.
+**Current phase:** Phase 6c — AR training on larger data.
 
-**Immediate next step:** train AR using the scaled train and validation activation artifacts.
+**Immediate next step:** run the code-text AR comparison.
 
 ## Phase 1 — Define research question and scope
 
@@ -91,15 +91,13 @@ This document is the active roadmap for the project. These phase numbers are the
 
 ### Phase 6c — AR training on larger data
 
-**Planned default:**
+| Setup | Text field | Target transform | Best epoch | Validation FVE | Beats train-mean baseline? |
+|---|---|---|---:|---:|---|
+| refdesc DistilBERT frozen | `reference_description` | standardize | 12 | 0.095719 | yes |
 
-- text model: `distilbert-base-uncased`
-- text field: `reference_description`
-- fallback fields: `prompt,code`
-- target transform: `standardize`
-- text encoder: frozen
+**Report:** `docs/phase_results/phase_06c_scaled_ar_refdesc.md`
 
-**Status:** Next step.
+**Status:** In progress. Next run: code-text comparison.
 
 ## Phase 7 — Implement AV
 
