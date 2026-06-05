@@ -150,6 +150,21 @@ def print_model_loading_error(kind: str, exc: Exception) -> None:
     print("- incompatible torch/transformers/accelerate versions")
 
 
+def load_causal_lm_with_dtype(
+    model_cls,
+    model_name_or_path: str,
+    dtype: torch.dtype | str,
+    **kwargs,
+):
+    """Load a causal LM with new `dtype=` support and old `torch_dtype=` fallback."""
+    try:
+        return model_cls.from_pretrained(model_name_or_path, dtype=dtype, **kwargs)
+    except TypeError as exc:
+        if "dtype" not in str(exc):
+            raise
+        return model_cls.from_pretrained(model_name_or_path, torch_dtype=dtype, **kwargs)
+
+
 def move_batch_to_device(
     batch: dict[str, torch.Tensor],
     device: torch.device,
@@ -196,9 +211,10 @@ def main() -> None:
     print_section(3, total_sections, "Loading model")
     print_vram("Before model load")
     try:
-        model = AutoModelForCausalLM.from_pretrained(
+        model = load_causal_lm_with_dtype(
+            AutoModelForCausalLM,
             args.model_name_or_path,
-            torch_dtype=torch_dtype,
+            torch_dtype,
             device_map=args.device_map,
             trust_remote_code=args.trust_remote_code,
             local_files_only=args.local_files_only,

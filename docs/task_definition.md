@@ -52,6 +52,28 @@ The extracted activation becomes the input to the Activation Verbalizer (AV). Th
   - Formatting and comment perturbations
   - Same-semantics functions across Python, C++, and Java
 
+### Processed dataset schema
+
+Dataset preparation writes JSONL rows with the following fields:
+
+- `example_id`
+- `source_dataset`
+- `source_split`
+- `split`
+- `language`
+- `task_family`
+- `code`
+- `prompt`
+- `reference_description`
+- `transformation_type`
+- `paired_example_id`
+- `metadata`
+
+The prompt is constructed with `code_explanation_prompt_v1(code)`. The
+`transformation_type` field records whether the row is original code, an
+identifier-renamed surface shift, a formatting/comment-only shift, or a
+language-shift example.
+
 ## Required outputs
 
 The project should produce:
