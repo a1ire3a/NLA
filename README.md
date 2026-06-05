@@ -1,6 +1,6 @@
 # Natural Language Autoencoders for Code-Semantic Activations
 
-This repository contains a compact, reproducible reimplementation plan for the KTH PhD recruitment task on **Natural Language Autoencoders (NLA)** applied to small open-source code language models.
+This repository contains a compact, reproducible implementation for the KTH PhD recruitment task on **Natural Language Autoencoders (NLA)** applied to small open-source code language models.
 
 The project investigates whether a simplified NLA can translate internal activations of a code language model into natural-language explanations, and whether those explanations preserve information about code semantics under surface-level and programming-language shifts.
 
@@ -36,13 +36,13 @@ If code is copied or closely adapted from the official repository, the relevant 
 .
 ├── configs/                 # YAML experiment configurations
 ├── data/                    # Dataset notes and local data layout; raw data is not committed
-├── docs/                    # Project plan, task definition, setup, and research notes
+├── docs/                    # Project plan, setup notes, phase reports, and research log
 ├── experiments/             # Experiment registry CSV and lightweight metadata
 ├── notebooks/               # Optional exploratory notebooks
 ├── prompts/                 # Codex/agent prompts used during implementation
 ├── scripts/                 # CLI entry points for each pipeline stage
-├── src/nla_code_interp/     # Python package skeleton
-├── tests/                   # Basic smoke tests
+├── src/nla_code_interp/     # Python package
+├── tests/                   # Smoke and unit tests
 ├── requirements.txt
 └── README.md
 ```
@@ -60,7 +60,25 @@ code prompt
 
 ## Current status
 
-This repository currently contains the project scaffold. The next implementation step is to validate the CUDA environment, load the smoke-test model, and verify that hidden states can be extracted from the selected layer.
+The debug baseline pipeline is complete end-to-end:
+
+```text
+activation extraction -> metrics -> AR -> AV -> full loop -> controlled test evaluation
+```
+
+The DistilBERT/DistilGPT2 debug baseline successfully validated the implementation, but it did not produce final-quality reconstruction. The current project phase is the Qwen-based aligned NLA implementation:
+
+- Qwen AR LoRA smoke test: complete
+- Qwen AV LoRA smoke test: complete
+- Qwen AV generation smoke test: complete
+- Next step: reconstruction-aware / aligned Qwen NLA training with the 0.5B model before final 1.5B runs
+
+Primary planning and reporting files:
+
+- Active roadmap: `docs/project_plan.md`
+- Central narrative log: `docs/research_log.md`
+- Experiment registry: `experiments/experiment_log.csv`
+- Phase-specific reports: `docs/phase_results/`
 
 ## Reproducibility principle
 
