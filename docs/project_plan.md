@@ -4,9 +4,9 @@ This document is the active roadmap for the project. These phase numbers are the
 
 ## Current Phase
 
-**Current phase:** Phase 6c — AR training on larger data.
+**Current phase:** Phase 7 — Implement AV.
 
-**Immediate next step:** run a longer code-text AR training run or proceed to the first AV implementation.
+**Immediate next step:** implement the first Activation Verbalizer that maps extracted activations to short natural-language explanations.
 
 ## Phase 1 — Define research question and scope
 
@@ -78,16 +78,9 @@ This document is the active roadmap for the project. These phase numbers are the
 | Run | Baseline | FVE | MSE |
 |---|---|---:|---:|
 | train | mean | 0.000000 | 0.176965 |
-| train | zero | -8.362388 | 1.656818 |
-| train | shuffled | -1.003030 | 0.354467 |
-| validation | mean | 0.000000 | 0.234559 |
-| validation | zero | -6.041395 | 1.651625 |
-| validation | shuffled | -1.052512 | 0.481436 |
 | validation using train reference | train mean | -0.005988 | 0.235964 |
 
 **Report:** `docs/phase_results/phase_06b_scaled_baselines.md`
-
-**Status:** Complete.
 
 ### Phase 6c — AR training on larger data
 
@@ -101,15 +94,27 @@ This document is the active roadmap for the project. These phase numbers are the
 - `docs/phase_results/phase_06c_scaled_ar_refdesc.md`
 - `docs/phase_results/phase_06c_scaled_ar_code.md`
 
-**Decision:** The current best AR baseline uses `text_field=code`, `target_transform=standardize`, and a frozen DistilBERT encoder.
+**Decision:** The current AR baseline is sufficient for proceeding to the first AV implementation. The best AR setting uses `text_field=code`, `target_transform=standardize`, and a frozen DistilBERT encoder.
 
-**Status:** In progress.
+**Status:** Complete enough for first NLA implementation.
 
 ## Phase 7 — Implement AV
 
-**Status:** Not started.
+**Goal:** Implement the first Activation Verbalizer that maps activation vectors to natural-language explanations.
+
+**First implementation target:** supervised AV training from saved activations to available text targets.
+
+**Default text target:** `reference_description`.
+
+**Status:** Current phase.
 
 ## Phase 8 — Connect the full NLA loop
+
+**Goal:** Run:
+
+```text
+activation -> AV -> explanation -> AR -> reconstructed activation -> FVE
+```
 
 **Status:** Not started.
 
