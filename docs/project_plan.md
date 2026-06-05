@@ -4,9 +4,9 @@ This document is the active roadmap for the project. These phase numbers are the
 
 ## Current Phase
 
-**Current phase:** Phase 10 — Improve NLA reconstruction.
+**Current phase:** Phase 10 — Qwen-based aligned NLA implementation.
 
-**Immediate next step:** implement reconstruction-driven or generated-text-aware improvement instead of repeating the same supervised AV baseline.
+**Immediate next step:** replace the DistilBERT/DistilGPT2 debug baselines with Qwen-based AR and AV components, using the 0.5B model for smoke tests and reserving the 1.5B model for the final run.
 
 ## Phase 1 — Define research question and scope
 
@@ -46,7 +46,7 @@ This document is the active roadmap for the project. These phase numbers are the
 | AR on `reference_description` | validation FVE `0.095719` |
 | AR on `code` | validation FVE `0.238927` |
 
-**Status:** Complete enough for first NLA implementation.
+**Status:** Complete as a debug baseline.
 
 ## Phase 7 — Implement AV
 
@@ -54,34 +54,19 @@ This document is the active roadmap for the project. These phase numbers are the
 |---|---|---|---:|---:|---|
 | supervised AV baseline | `reference_description` | `distilgpt2` | 5 | 3.098751 | Complete |
 
-**Status:** Complete enough for first NLA implementation.
+**Status:** Complete as a debug baseline.
 
 ## Phase 8 — Connect the full NLA loop
 
-### Validation full-loop result
-
-| Method | FVE | MSE |
-|---|---:|---:|
-| NLA loop | -0.353821 | 0.317551 |
-| mean baseline | 0.000000 | 0.234559 |
+| Split | NLA FVE | NLA MSE | Mean MSE |
+|---|---:|---:|---:|
+| validation | -0.353821 | 0.317551 | 0.234559 |
 
 **Report:** `docs/phase_results/phase_08_full_nla_loop.md`
 
-**Status:** Complete for validation baseline.
+**Status:** Complete as a debug baseline.
 
-## Phase 9 — Controlled evaluations
-
-### Phase 9a — Test activation extraction
-
-| Split | Examples | Shape | Truncated | Status |
-|---|---:|---|---:|---|
-| `test_indomain` | 500 | `(500, 1536)` | 26 | Complete |
-| `test_surface_shift` | 500 | `(500, 1536)` | 42 | Complete |
-| `test_language_shift` | 361 | `(361, 1536)` | 0 | Complete |
-
-**Report:** `docs/phase_results/phase_09a_test_activation_extraction.md`
-
-### Phase 9b — Test full-loop evaluation
+## Phase 9 — Controlled evaluations with the debug baseline
 
 | Split | NLA FVE | NLA MSE | Mean MSE | Shuffled FVE |
 |---|---:|---:|---:|---:|
@@ -89,21 +74,67 @@ This document is the active roadmap for the project. These phase numbers are the
 | `test_surface_shift` | -0.505704 | 0.297379 | 0.197502 | -0.997270 |
 | `test_language_shift` | -13.048594 | 0.268444 | 0.019108 | -0.945287 |
 
-**Report:** `docs/phase_results/phase_09b_test_full_loop.md`
+**Reports:**
 
-**Status:** Complete for current supervised baseline.
+- `docs/phase_results/phase_09a_test_activation_extraction.md`
+- `docs/phase_results/phase_09b_test_full_loop.md`
 
-## Phase 10 — Improve NLA reconstruction
+**Status:** Complete for the debug baseline.
 
-**Goal:** Move beyond the supervised AV baseline toward reconstruction-aware training.
+## Phase 10 — Qwen-based aligned NLA implementation
 
-**Current bottleneck:** AV-generated explanations do not preserve enough activation-specific information for AR reconstruction.
+**Goal:** Move from debug baselines to a stronger, aligned NLA implementation.
 
-**Candidate next steps:**
+**Problem with the debug baseline:**
 
-1. Train AR on AV-generated explanations as an adaptation step.
-2. Add reconstruction-driven AV fine-tuning.
-3. Move AV/AR to stronger or same-family code-aware models.
-4. Add qualitative analysis of AV-generated explanations before choosing the expensive path.
+- AR used DistilBERT, which is not code-aware and not from the target-model family.
+- AV used DistilGPT2, which is also weak and not code-aware.
+- AR and AV were not aligned: the best AR was trained on `code`, while AV generated natural-language explanations.
 
-**Status:** Current phase.
+**Implementation direction:**
+
+- Use Qwen-based AR and AV components.
+- Use LoRA/PEFT rather than full fine-tuning.
+- Keep AR input style aligned with AV output style.
+- Use 0.5B Qwen for implementation smoke tests.
+- Use 1.5B Qwen only for the final serious run.
+
+### Phase 10a — Implement Qwen-based aligned AR/AV
+
+**Goal:** Add Qwen-based model classes and training scripts while preserving the existing debug baselines.
+
+**Default smoke model:** `Qwen/Qwen2.5-Coder-0.5B-Instruct`
+
+**Final model:** `Qwen/Qwen2.5-Coder-1.5B-Instruct`
+
+**Status:** Current step.
+
+### Phase 10b — Smoke test Qwen AR and Qwen AV separately
+
+**Goal:** Verify that Qwen-based AR and AV train and generate on a tiny subset without breaking memory or artifact formats.
+
+**Status:** Not started.
+
+### Phase 10c — Implement aligned / joint training
+
+**Goal:** Add reconstruction-aware training where AV-generated text is evaluated through AR reconstruction.
+
+**Status:** Not started.
+
+### Phase 10d — Final 1.5B run
+
+**Goal:** Run the aligned Qwen-based NLA on the main train/validation/test artifacts.
+
+**Status:** Not started.
+
+## Phase 11 — Final controlled evaluation
+
+**Goal:** Evaluate the final Qwen-based aligned NLA on in-domain, surface-shift, and language-shift splits.
+
+**Status:** Not started.
+
+## Phase 12 — Final report
+
+**Goal:** Produce final README/report, quantitative tables, qualitative examples, limitations, and reproducibility commands.
+
+**Status:** Not started.
