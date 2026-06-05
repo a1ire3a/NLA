@@ -4,9 +4,9 @@ This document is the active roadmap for the project. These phase numbers are the
 
 ## Current Phase
 
-**Current phase:** Phase 10c — Implement aligned / joint training.
+**Current phase:** Phase 10c — Qwen aligned / reconstruction-aware training.
 
-**Immediate next step:** implement reconstruction-aware training using Qwen-based AR and AV, smoke-tested with the 0.5B model.
+**Immediate next step:** run a medium 0.5B Qwen aligned experiment before the final 1.5B run.
 
 ## Phase 1 — Define research question and scope
 
@@ -94,17 +94,21 @@ This document is the active roadmap for the project. These phase numbers are the
 
 **Status:** Complete as part of Phase 10a smoke testing.
 
-### Phase 10c — Implement aligned / joint training
+### Phase 10c — Qwen aligned / reconstruction-aware training
 
-**Goal:** Add reconstruction-aware training where AV-generated text is evaluated through AR reconstruction.
+| Run | Examples | FVE | MSE | Status |
+|---|---:|---:|---:|---|
+| Qwen NLA before adaptation | 32 validation | -0.077940 | 0.157551 | Success |
+| Generated-text AR adaptation | 64 train / 32 validation | -0.081226 | 0.158031 | Success |
+| Qwen NLA after adaptation | 32 validation | -0.081226 | 0.158031 | Success |
 
-**Rules:**
+**Report:** `docs/phase_results/phase_10c_qwen_nla_adaptation_smoke.md`
 
-- Use 0.5B Qwen for implementation and smoke tests.
-- Keep AR and AV text style aligned around `reference_description` / explanation-style text.
-- Do not run the 1.5B final model until the joint-training code is validated.
+**Interpretation:** The implementation works, but the tiny one-epoch generated-text AR adaptation did not improve reconstruction. This smoke run validates code paths, not final quality.
 
-**Status:** Current step.
+**Next step:** run a medium 0.5B Qwen aligned experiment with more examples and epochs.
+
+**Status:** In progress.
 
 ### Phase 10d — Final 1.5B run
 
