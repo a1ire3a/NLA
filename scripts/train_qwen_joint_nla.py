@@ -52,6 +52,11 @@ from scripts.train_ar import (  # noqa: E402
     load_activation_artifact,
     resolve_device,
 )
+from scripts.train_av import (  # noqa: E402
+    build_av_examples as build_base_av_examples,
+    target_field_counts,
+    text_length_summary,
+)
 from scripts.train_qwen_av import (  # noqa: E402
     QwenAVDataset,
     build_examples as build_qwen_av_examples,
@@ -59,8 +64,6 @@ from scripts.train_qwen_av import (  # noqa: E402
     make_collate_fn as make_qwen_av_collate_fn,
     move_batch as move_qwen_av_batch,
     parse_fallback_fields,
-    target_field_counts,
-    text_length_summary,
 )
 
 
@@ -824,13 +827,13 @@ def main() -> None:
         target_text_field=args.target_text_field,
         fallback_text_fields=fallback_fields,
     )
-    validation_av_examples = build_qwen_av_examples(
-        artifact=validation_artifact,
+    train_av_stats_examples = build_base_av_examples(
+        train_artifact.metadata_rows,
         target_text_field=args.target_text_field,
         fallback_text_fields=fallback_fields,
     )
-    print(f"Train target fields: {target_field_counts(train_av_examples)}")
-    print(f"Train target lengths: {text_length_summary(train_av_examples)}")
+    print(f"Train target fields: {target_field_counts(train_av_stats_examples)}")
+    print(f"Train target lengths: {text_length_summary(train_av_stats_examples)}")
     print(f"Target transform: {args.target_transform}")
 
     print_section(3, 10, "Loading tokenizer and Qwen models")
