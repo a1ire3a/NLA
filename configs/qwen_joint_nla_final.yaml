@@ -1,0 +1,32 @@
+phase: phase10d_qwen_joint_nla
+description: Final 1.5B aligned Qwen NLA alternating AV/AR training run.
+
+activation_dir: outputs/activations/train_qwen25_coder_15b_l19_ctx512
+validation_activation_dir: outputs/activations/validation_qwen25_coder_15b_l19_ctx512
+output_dir: outputs/checkpoints/qwen_joint/final_qwen15b_full_e3
+
+model_name_or_path: Qwen/Qwen2.5-Coder-1.5B-Instruct
+target_text_field: reference_description
+fallback_text_fields: prompt,code
+target_transform: standardize
+
+epochs: 3
+batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate_av: 0.0001
+learning_rate_ar: 0.0001
+max_target_length: 128
+max_ar_length: 256
+max_new_tokens: 128
+
+lora_r: 8
+lora_alpha: 16
+lora_dropout: 0.05
+dtype: bfloat16
+device: cuda
+seed: 42
+eval_every_epoch: true
+
+av_loss_weight: 1.0
+ar_generated_loss_weight: 1.0
+ar_anchor_loss_weight: 0.25

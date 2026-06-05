@@ -32,8 +32,10 @@ from nla_code_interp.metrics import (  # noqa: E402
 from nla_code_interp.qwen_models import (  # noqa: E402
     QwenARCheckpointBundle,
     QwenAVCheckpointBundle,
+    QwenJointCheckpointBundle,
     load_qwen_ar_checkpoint,
     load_qwen_av_checkpoint,
+    load_qwen_joint_checkpoint,
 )
 from nla_code_interp.utils import set_seed  # noqa: E402
 from scripts.train_ar import ActivationArtifact, load_activation_artifact  # noqa: E402
@@ -65,8 +67,9 @@ METRIC_COLUMNS = (
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the Qwen full NLA loop.")
     parser.add_argument("--activation_dir", required=True)
-    parser.add_argument("--qwen_av_checkpoint_dir", required=True)
-    parser.add_argument("--qwen_ar_checkpoint_dir", required=True)
+    parser.add_argument("--qwen_av_checkpoint_dir", default=None)
+    parser.add_argument("--qwen_ar_checkpoint_dir", default=None)
+    parser.add_argument("--joint_checkpoint_dir", default=None)
     parser.add_argument("--output_dir", required=True)
     parser.add_argument("--run_name", required=True)
     parser.add_argument("--limit", type=int, default=None)
@@ -85,6 +88,25 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError(f"batch_size must be positive, got {args.batch_size}")
     if args.max_new_tokens <= 0:
         raise ValueError(f"max_new_tokens must be positive, got {args.max_new_tokens}")
+    resolve_checkpoint_mode(args)
+
+
+def resolve_checkpoint_mode(args: argparse.Namespace) -> str:
+    has_split = bool(args.qwen_av_checkpoint_dir or args.qwen_ar_checkpoint_dir)
+    has_complete_split = bool(args.qwen_av_checkpoint_dir and args.qwen_ar_checkpoint_dir)
+    has_joint = bool(args.joint_checkpoint_dir)
+    if has_joint and has_split:
+        raise ValueError(
+            "Use either --joint_checkpoint_dir or both split checkpoint args, not both."
+        )
+    if has_joint:
+        return "joint"
+    if has_complete_split:
+        return "split"
+    raise ValueError(
+        "Provide either --joint_checkpoint_dir or both --qwen_av_checkpoint_dir "
+        "and --qwen_ar_checkpoint_dir."
+    )
 
 
 def print_section(index: int, total: int, label: str) -> None:
@@ -324,6 +346,34 @@ def checkpoint_summary(bundle: QwenAVCheckpointBundle | QwenARCheckpointBundle) 
     }
 
 
+def load_qwen_loop_checkpoints(
+    *,
+    args: argparse.Namespace,
+    device: torch.device,
+) -> tuple[QwenAVCheckpointBundle, QwenARCheckpointBundle, QwenJointCheckpointBundle | None]:
+    mode = resolve_checkpoint_mode(args)
+    if mode == "joint":
+        joint_bundle = load_qwen_joint_checkpoint(
+            checkpoint_dir=Path(args.joint_checkpoint_dir),
+            device=device,
+            av_adapter_trainable=False,
+            ar_adapter_trainable=False,
+        )
+        return joint_bundle.av_bundle, joint_bundle.ar_bundle, joint_bundle
+
+    av_bundle = load_qwen_av_checkpoint(
+        checkpoint_dir=Path(args.qwen_av_checkpoint_dir),
+        device=device,
+        adapter_trainable=False,
+    )
+    ar_bundle = load_qwen_ar_checkpoint(
+        checkpoint_dir=Path(args.qwen_ar_checkpoint_dir),
+        device=device,
+        adapter_trainable=False,
+    )
+    return av_bundle, ar_bundle, None
+
+
 def main() -> None:
     args = parse_args()
     validate_args(args)
@@ -331,8 +381,6 @@ def main() -> None:
     device = resolve_device()
 
     activation_dir = Path(args.activation_dir)
-    av_checkpoint_dir = Path(args.qwen_av_checkpoint_dir)
-    ar_checkpoint_dir = Path(args.qwen_ar_checkpoint_dir)
     output_dir = Path(args.output_dir)
     paths = output_paths(output_dir, args.run_name)
 
@@ -341,13 +389,11 @@ def main() -> None:
     prepare_output_paths(paths, overwrite=args.overwrite)
     print(f"Activations: {tuple(artifact.activations.shape)}")
 
-    print_section(2, 8, "Loading Qwen AV checkpoint")
-    av_bundle = load_qwen_av_checkpoint(
-        checkpoint_dir=av_checkpoint_dir,
-        device=device,
-        adapter_trainable=False,
-    )
+    print_section(2, 8, "Loading Qwen AV/AR checkpoint")
+    av_bundle, ar_bundle, joint_bundle = load_qwen_loop_checkpoints(args=args, device=device)
     print(f"Qwen AV model: {av_bundle.config['model_name_or_path']}")
+    if joint_bundle is not None:
+        print(f"Joint checkpoint: {args.joint_checkpoint_dir}")
 
     print_section(3, 8, "Generating explanations")
     generated_rows = generate_qwen_explanation_rows(
@@ -359,12 +405,7 @@ def main() -> None:
     )
     print(f"Generated explanations: {len(generated_rows)}")
 
-    print_section(4, 8, "Loading Qwen AR checkpoint")
-    ar_bundle = load_qwen_ar_checkpoint(
-        checkpoint_dir=ar_checkpoint_dir,
-        device=device,
-        adapter_trainable=False,
-    )
+    print_section(4, 8, "Validating Qwen AR checkpoint")
     validate_checkpoint_dims(artifact=artifact, av_bundle=av_bundle, ar_bundle=ar_bundle)
     print(f"Qwen AR model: {ar_bundle.config['model_name_or_path']}")
     print(f"Qwen AR target transform: {ar_bundle.target_transform.name}")
@@ -413,8 +454,9 @@ def main() -> None:
         "generated_at": datetime.now(UTC).isoformat(),
         "cli_args": vars(args),
         "activation_dir": str(activation_dir),
-        "qwen_av_checkpoint_dir": str(av_checkpoint_dir),
-        "qwen_ar_checkpoint_dir": str(ar_checkpoint_dir),
+        "qwen_av_checkpoint_dir": args.qwen_av_checkpoint_dir,
+        "qwen_ar_checkpoint_dir": args.qwen_ar_checkpoint_dir,
+        "joint_checkpoint_dir": args.joint_checkpoint_dir,
         "output_dir": str(output_dir),
         "run_name": args.run_name,
         "limit": args.limit,
@@ -425,6 +467,16 @@ def main() -> None:
         "seed": args.seed,
         "qwen_av_checkpoint_summary": checkpoint_summary(av_bundle),
         "qwen_ar_checkpoint_summary": checkpoint_summary(ar_bundle),
+        "joint_checkpoint_summary": (
+            {
+                "schema_version": joint_bundle.checkpoint.get("schema_version"),
+                "epoch": joint_bundle.checkpoint.get("epoch"),
+                "config": joint_bundle.config,
+                "validation_metrics": joint_bundle.checkpoint.get("validation_metrics"),
+            }
+            if joint_bundle is not None
+            else None
+        ),
         "metrics": metric_rows,
         "output_files": {key: str(path) for key, path in paths.items()},
     }

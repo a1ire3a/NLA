@@ -131,6 +131,14 @@ class QwenARCheckpointBundle:
     checkpoint: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class QwenJointCheckpointBundle:
+    av_bundle: QwenAVCheckpointBundle
+    ar_bundle: QwenARCheckpointBundle
+    config: dict[str, Any]
+    checkpoint: dict[str, Any]
+
+
 def dtype_from_name(dtype_name: str) -> torch.dtype:
     mapping = {
         "float32": torch.float32,
@@ -380,6 +388,8 @@ def load_qwen_model_from_checkpoint(
     config: dict[str, Any],
     output_files: dict[str, Any],
     adapter_trainable: bool = False,
+    adapter_file_key: str = "qwen_adapter",
+    state_file_key: str = "qwen_model_state",
 ) -> nn.Module:
     qwen_model = load_qwen_causal_lm(
         model_name_or_path=config["model_name_or_path"],
@@ -394,7 +404,7 @@ def load_qwen_model_from_checkpoint(
                 "Could not import peft. Install project dependencies with "
                 "`pip install -r requirements.txt`."
             ) from exc
-        adapter_dir = checkpoint_dir / output_files.get("qwen_adapter", "qwen_adapter")
+        adapter_dir = checkpoint_dir / output_files.get(adapter_file_key, "qwen_adapter")
         if not adapter_dir.exists():
             raise FileNotFoundError(f"Missing Qwen adapter directory: {adapter_dir}")
         return PeftModel.from_pretrained(
@@ -403,8 +413,8 @@ def load_qwen_model_from_checkpoint(
             is_trainable=adapter_trainable,
         )
 
-    if "qwen_model_state" in output_files:
-        state_path = checkpoint_dir / output_files["qwen_model_state"]
+    if state_file_key in output_files:
+        state_path = checkpoint_dir / output_files[state_file_key]
         qwen_model.load_state_dict(torch.load(state_path, map_location="cpu"))
     for parameter in qwen_model.parameters():
         parameter.requires_grad = False
@@ -489,6 +499,130 @@ def load_qwen_ar_checkpoint(
         model=model,
         tokenizer=tokenizer,
         target_transform=target_transform_from_checkpoint_state(transform_state),
+        config=config,
+        checkpoint=checkpoint,
+    )
+
+
+def load_qwen_joint_checkpoint(
+    *,
+    checkpoint_dir: Path,
+    device: torch.device,
+    av_adapter_trainable: bool = False,
+    ar_adapter_trainable: bool = False,
+) -> QwenJointCheckpointBundle:
+    """Load a Phase 10d joint checkpoint as separate Qwen AV and AR bundles."""
+    checkpoint = load_checkpoint_payload(checkpoint_dir, device=device)
+    config = checkpoint["config"]
+    if config.get("component") != "qwen_joint_nla":
+        raise ValueError(
+            f"Expected qwen_joint_nla checkpoint, got {config.get('component')!r}"
+        )
+    output_files = checkpoint["output_files"]
+    activation_dim = int(config["activation_dim"])
+    lora_settings = LoraSettings(
+        r=int(config.get("lora", {}).get("r", 0)),
+        alpha=int(config.get("lora", {}).get("alpha", 16)),
+        dropout=float(config.get("lora", {}).get("dropout", 0.0)),
+        target_modules=tuple(config.get("lora", {}).get("target_modules", ())),
+    )
+    tokenizer = load_qwen_tokenizer_from_checkpoint(
+        checkpoint_dir=checkpoint_dir,
+        config=config,
+        output_files=output_files,
+    )
+
+    av_config = qwen_checkpoint_metadata(
+        component="qwen_av",
+        model_name_or_path=config["model_name_or_path"],
+        activation_dim=activation_dim,
+        dtype=config.get("dtype", "bfloat16"),
+        lora_settings=lora_settings,
+        extra_config={
+            "target_text_field": config.get("target_text_field", "reference_description"),
+            "fallback_text_fields": config.get("fallback_text_fields", "prompt,code"),
+            "max_target_length": config.get("max_target_length", 128),
+            "source_component": "qwen_joint_nla",
+        },
+    )
+    av_qwen_model = load_qwen_model_from_checkpoint(
+        checkpoint_dir=checkpoint_dir,
+        config=config,
+        output_files=output_files,
+        adapter_trainable=av_adapter_trainable,
+        adapter_file_key="qwen_av_adapter",
+        state_file_key="qwen_av_model_state",
+    )
+    av_model = QwenActivationVerbalizer(
+        qwen_model=av_qwen_model,
+        activation_dim=activation_dim,
+    )
+    av_projection_path = checkpoint_dir / output_files["activation_projection"]
+    av_model.activation_projection.load_state_dict(
+        torch.load(av_projection_path, map_location="cpu")
+    )
+    av_model = av_model.to(device)
+    av_model.eval()
+
+    transform_state = checkpoint.get("target_transform_state")
+    if transform_state is None and "target_transform" in output_files:
+        transform_state = torch.load(
+            checkpoint_dir / output_files["target_transform"],
+            map_location="cpu",
+        )
+    if not isinstance(transform_state, dict):
+        raise ValueError(
+            f"{checkpoint_dir / 'model.pt'} is missing target_transform_state."
+        )
+    target_transform = target_transform_from_checkpoint_state(transform_state)
+
+    ar_config = qwen_checkpoint_metadata(
+        component="qwen_ar",
+        model_name_or_path=config["model_name_or_path"],
+        activation_dim=activation_dim,
+        dtype=config.get("dtype", "bfloat16"),
+        lora_settings=lora_settings,
+        extra_config={
+            "text_field": config.get("target_text_field", "reference_description"),
+            "fallback_text_fields": config.get("fallback_text_fields", "prompt,code"),
+            "target_transform": target_transform.name,
+            "max_length": config.get("max_ar_length", 256),
+            "pooling": config.get("pooling", "final"),
+            "source_component": "qwen_joint_nla",
+        },
+    )
+    ar_qwen_model = load_qwen_model_from_checkpoint(
+        checkpoint_dir=checkpoint_dir,
+        config=config,
+        output_files=output_files,
+        adapter_trainable=ar_adapter_trainable,
+        adapter_file_key="qwen_ar_adapter",
+        state_file_key="qwen_ar_model_state",
+    )
+    ar_model = QwenActivationReconstructor(
+        qwen_model=ar_qwen_model,
+        activation_dim=activation_dim,
+        pooling=ar_config.get("pooling", "final"),
+    )
+    ar_projection_path = checkpoint_dir / output_files["ar_projection_head"]
+    ar_model.projection.load_state_dict(torch.load(ar_projection_path, map_location="cpu"))
+    ar_model = ar_model.to(device)
+    ar_model.eval()
+
+    return QwenJointCheckpointBundle(
+        av_bundle=QwenAVCheckpointBundle(
+            model=av_model,
+            tokenizer=tokenizer,
+            config=av_config,
+            checkpoint=checkpoint,
+        ),
+        ar_bundle=QwenARCheckpointBundle(
+            model=ar_model,
+            tokenizer=tokenizer,
+            target_transform=target_transform,
+            config=ar_config,
+            checkpoint=checkpoint,
+        ),
         config=config,
         checkpoint=checkpoint,
     )
