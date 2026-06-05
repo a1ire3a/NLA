@@ -4,9 +4,9 @@ This document is the active roadmap for the project. These phase numbers are the
 
 ## Current Phase
 
-**Current phase:** Phase 9 — Controlled evaluations.
+**Current phase:** Phase 10 — Improve NLA reconstruction.
 
-**Immediate next step:** run the current full NLA loop on the three controlled test activation artifacts.
+**Immediate next step:** implement reconstruction-driven or generated-text-aware improvement instead of repeating the same supervised AV baseline.
 
 ## Phase 1 — Define research question and scope
 
@@ -41,26 +41,10 @@ This document is the active roadmap for the project. These phase numbers are the
 
 ## Phase 6 — Scale activations and train AR on larger data
 
-### Phase 6a — Scaled activation extraction
-
-| Artifact | Examples | Shape | Truncated | Status |
-|---|---:|---|---:|---|
-| `train_qwen25_coder_15b_l19_ctx512` | 5000 | `(5000, 1536)` | 368 | Complete |
-| `validation_qwen25_coder_15b_l19_ctx512` | 500 | `(500, 1536)` | 51 | Complete |
-
-### Phase 6b — Scaled baselines
-
-| Run | Baseline | FVE | MSE |
-|---|---|---:|---:|
-| train | mean | 0.000000 | 0.176965 |
-| validation using train reference | train mean | -0.005988 | 0.235964 |
-
-### Phase 6c — AR training on larger data
-
-| Setup | Text field | Target transform | Best epoch | Validation FVE | Validation RMSE | Beats train-mean baseline? |
-|---|---|---|---:|---:|---:|---|
-| refdesc DistilBERT frozen | `reference_description` | standardize | 12 | 0.095719 | 0.460551 | yes |
-| code DistilBERT frozen | `code` | standardize | 20 | 0.238927 | 0.422512 | yes |
+| Component | Best result |
+|---|---|
+| AR on `reference_description` | validation FVE `0.095719` |
+| AR on `code` | validation FVE `0.238927` |
 
 **Status:** Complete enough for first NLA implementation.
 
@@ -74,14 +58,12 @@ This document is the active roadmap for the project. These phase numbers are the
 
 ## Phase 8 — Connect the full NLA loop
 
-### Phase 8a — AV-to-code-AR loop on validation
+### Validation full-loop result
 
 | Method | FVE | MSE |
 |---|---:|---:|
 | NLA loop | -0.353821 | 0.317551 |
 | mean baseline | 0.000000 | 0.234559 |
-| zero baseline | -6.041395 | 1.651625 |
-| shuffled baseline | -1.052512 | 0.481436 |
 
 **Report:** `docs/phase_results/phase_08_full_nla_loop.md`
 
@@ -99,10 +81,29 @@ This document is the active roadmap for the project. These phase numbers are the
 
 **Report:** `docs/phase_results/phase_09a_test_activation_extraction.md`
 
-### Phase 9b — Full-loop evaluation on test artifacts
+### Phase 9b — Test full-loop evaluation
 
-**Status:** Next step.
+| Split | NLA FVE | NLA MSE | Mean MSE | Shuffled FVE |
+|---|---:|---:|---:|---:|
+| `test_indomain` | -0.758254 | 0.232325 | 0.132134 | -0.929892 |
+| `test_surface_shift` | -0.505704 | 0.297379 | 0.197502 | -0.997270 |
+| `test_language_shift` | -13.048594 | 0.268444 | 0.019108 | -0.945287 |
 
-## Phase 10 — Final report
+**Report:** `docs/phase_results/phase_09b_test_full_loop.md`
 
-**Status:** Not started.
+**Status:** Complete for current supervised baseline.
+
+## Phase 10 — Improve NLA reconstruction
+
+**Goal:** Move beyond the supervised AV baseline toward reconstruction-aware training.
+
+**Current bottleneck:** AV-generated explanations do not preserve enough activation-specific information for AR reconstruction.
+
+**Candidate next steps:**
+
+1. Train AR on AV-generated explanations as an adaptation step.
+2. Add reconstruction-driven AV fine-tuning.
+3. Move AV/AR to stronger or same-family code-aware models.
+4. Add qualitative analysis of AV-generated explanations before choosing the expensive path.
+
+**Status:** Current phase.
