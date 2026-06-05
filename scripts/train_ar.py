@@ -7,6 +7,7 @@ import csv
 import json
 import shutil
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -22,7 +23,13 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from nla_code_interp.data import iter_jsonl, write_jsonl  # noqa: E402
-from nla_code_interp.metrics import summarize_reconstruction  # noqa: E402
+from nla_code_interp.metrics import (  # noqa: E402
+    baseline_mean_reconstruction,
+    per_example_cosine_similarity,
+    per_example_l2_error,
+    per_example_squared_error,
+    summarize_reconstruction,
+)
 from nla_code_interp.models import (  # noqa: E402
     TextActivationReconstructor,
     count_trainable_parameters,
@@ -30,11 +37,13 @@ from nla_code_interp.models import (  # noqa: E402
 from nla_code_interp.utils import set_seed  # noqa: E402
 
 
-SCHEMA_VERSION = "phase5_ar_training_v1"
+SCHEMA_VERSION = "phase5b_ar_training_v2"
 TEXT_FIELDS = ("reference_description", "prompt", "code")
+TARGET_TRANSFORMS = ("raw", "center", "standardize")
 METRIC_COLUMNS = (
     "epoch",
     "train_mse_loss",
+    "target_transform",
     "validation_fve",
     "validation_mse",
     "validation_rmse",
@@ -43,6 +52,12 @@ METRIC_COLUMNS = (
     "validation_cosine_std",
     "validation_cosine_min",
     "validation_cosine_max",
+    "validation_prediction_norm_mean",
+    "validation_target_norm_mean",
+    "validation_original_norm_mean",
+    "transformed_validation_mse",
+    "validation_train_mean_baseline_fve",
+    "validation_train_mean_baseline_mse",
     "is_best",
 )
 
@@ -69,6 +84,106 @@ class TextExample:
     text: str
     selected_text_field: str
     metadata: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class TargetTransform:
+    """Train-space target transform fit from training activations only."""
+
+    name: str
+    mean: torch.Tensor | None = None
+    std: torch.Tensor | None = None
+    eps: float = 1e-6
+
+    @classmethod
+    def fit(
+        cls,
+        name: str,
+        train_targets: torch.Tensor,
+        *,
+        eps: float = 1e-6,
+    ) -> "TargetTransform":
+        if name not in TARGET_TRANSFORMS:
+            raise ValueError(f"Unsupported target transform {name!r}")
+        train_targets = validate_target_matrix(train_targets, "train_targets")
+        if name == "raw":
+            return cls(name=name, eps=eps)
+
+        mean = train_targets.mean(dim=0, keepdim=True)
+        if name == "center":
+            return cls(name=name, mean=mean, eps=eps)
+
+        std = train_targets.std(dim=0, unbiased=False, keepdim=True).clamp_min(eps)
+        return cls(name=name, mean=mean, std=std, eps=eps)
+
+    def transform(self, targets: torch.Tensor) -> torch.Tensor:
+        targets = validate_target_matrix(targets, "targets")
+        if self.name == "raw":
+            return targets.clone()
+        if self.mean is None:
+            raise ValueError(f"TargetTransform {self.name!r} is missing mean.")
+        centered = targets - self.mean.to(device=targets.device, dtype=targets.dtype)
+        if self.name == "center":
+            return centered
+        if self.std is None:
+            raise ValueError("standardize TargetTransform is missing std.")
+        return centered / self.std.to(device=targets.device, dtype=targets.dtype)
+
+    def inverse_transform(self, predictions: torch.Tensor) -> torch.Tensor:
+        predictions = validate_target_matrix(predictions, "predictions")
+        if self.name == "raw":
+            return predictions.clone()
+        if self.mean is None:
+            raise ValueError(f"TargetTransform {self.name!r} is missing mean.")
+        mean = self.mean.to(device=predictions.device, dtype=predictions.dtype)
+        if self.name == "center":
+            return predictions + mean
+        if self.std is None:
+            raise ValueError("standardize TargetTransform is missing std.")
+        std = self.std.to(device=predictions.device, dtype=predictions.dtype)
+        return predictions * std + mean
+
+    def state_dict_for_checkpoint(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "eps": self.eps,
+            "mean": self.mean.detach().cpu() if self.mean is not None else None,
+            "std": self.std.detach().cpu() if self.std is not None else None,
+        }
+
+    def state_dict_for_manifest(self) -> dict[str, Any]:
+        state: dict[str, Any] = {"name": self.name, "eps": self.eps}
+        if self.mean is not None:
+            mean = self.mean.detach().cpu().float()
+            state.update(
+                {
+                    "mean_shape": list(mean.shape),
+                    "mean_norm": mean.norm(p=2).item(),
+                    "mean": mean.squeeze(0).tolist(),
+                }
+            )
+        if self.std is not None:
+            std = self.std.detach().cpu().float()
+            state.update(
+                {
+                    "std_shape": list(std.shape),
+                    "std_mean": std.mean().item(),
+                    "std_min": std.min().item(),
+                    "std_max": std.max().item(),
+                    "std": std.squeeze(0).tolist(),
+                }
+            )
+        return state
+
+
+@dataclass(frozen=True)
+class ValidationResult:
+    metrics: dict[str, float]
+    transformed_predictions: torch.Tensor
+    transformed_targets: torch.Tensor
+    original_predictions: torch.Tensor
+    original_targets: torch.Tensor
+    metadata_rows: list[dict]
 
 
 class ARDataset(Dataset):
@@ -139,6 +254,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--validation_fraction", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max_length", type=int, default=256)
+    parser.add_argument(
+        "--target_transform",
+        choices=TARGET_TRANSFORMS,
+        default=None,
+        help="Target-space transform fit from train activations only.",
+    )
+    parser.add_argument(
+        "--predict_residual_from_mean",
+        action="store_true",
+        help="Alias for --target_transform center.",
+    )
     parser.add_argument("--device", default="cuda")
     parser.add_argument(
         "--dtype",
@@ -164,6 +290,31 @@ def parse_fallback_fields(value: str) -> list[str]:
             f"Invalid fallback text field(s): {invalid}. Allowed fields: {TEXT_FIELDS}"
         )
     return fields
+
+
+def resolve_target_transform_arg(args: argparse.Namespace) -> str:
+    requested = args.target_transform
+    if args.predict_residual_from_mean:
+        if requested in {"raw", "standardize"}:
+            raise ValueError(
+                "--predict_residual_from_mean is an alias for --target_transform center; "
+                f"got conflicting --target_transform {requested!r}."
+            )
+        resolved = "center"
+    else:
+        resolved = requested or "raw"
+    args.target_transform = resolved
+    return resolved
+
+
+def validate_target_matrix(tensor: torch.Tensor, name: str) -> torch.Tensor:
+    if not isinstance(tensor, torch.Tensor):
+        raise TypeError(f"{name} must be a torch.Tensor, got {type(tensor)}")
+    if tensor.ndim != 2:
+        raise ValueError(f"{name} must have shape [num_examples, activation_dim]")
+    if tensor.shape[0] == 0 or tensor.shape[1] == 0:
+        raise ValueError(f"{name} must be non-empty, got {tensor.shape}")
+    return tensor.detach().float()
 
 
 def select_text_for_row(
@@ -212,6 +363,22 @@ def build_text_examples(
             )
         )
     return examples
+
+
+def text_field_counts(examples: list[TextExample]) -> dict[str, int]:
+    return dict(sorted(Counter(example.selected_text_field for example in examples).items()))
+
+
+def text_length_summary(examples: list[TextExample]) -> dict[str, float | int]:
+    lengths = [len(example.text) for example in examples]
+    if not lengths:
+        raise ValueError("Cannot summarize text lengths for an empty example list.")
+    return {
+        "count": len(lengths),
+        "mean_chars": sum(lengths) / len(lengths),
+        "min_chars": min(lengths),
+        "max_chars": max(lengths),
+    }
 
 
 def split_train_validation_indices(
@@ -404,6 +571,42 @@ def validate_args(args: argparse.Namespace) -> None:
         )
 
 
+def batched_indices(indices: list[int], batch_size: int):
+    for start in range(0, len(indices), batch_size):
+        yield indices[start : start + batch_size]
+
+
+def summarize_tokenization(
+    tokenizer,
+    examples: list[TextExample],
+    indices: list[int],
+    *,
+    max_length: int,
+    batch_size: int = 128,
+) -> dict[str, float | int]:
+    if not indices:
+        raise ValueError("Cannot summarize tokenization for an empty index list.")
+
+    lengths: list[int] = []
+    for chunk_indices in batched_indices(indices, batch_size):
+        texts = [examples[index].text for index in chunk_indices]
+        encoded = tokenizer(
+            texts,
+            padding=False,
+            truncation=False,
+            return_attention_mask=False,
+        )
+        lengths.extend(len(input_ids) for input_ids in encoded["input_ids"])
+    truncation_count = sum(length > max_length for length in lengths)
+    return {
+        "count": len(lengths),
+        "truncation_count": truncation_count,
+        "mean_tokens": sum(lengths) / len(lengths),
+        "max_tokens": max(lengths),
+        "max_length": max_length,
+    }
+
+
 def make_collate_fn(tokenizer, max_length: int):
     def collate(batch: list[dict[str, Any]]) -> dict[str, Any]:
         texts = [item["text"] for item in batch]
@@ -426,6 +629,104 @@ def make_collate_fn(tokenizer, max_length: int):
         }
 
     return collate
+
+
+def mean_norm(tensor: torch.Tensor) -> float:
+    validated = validate_target_matrix(tensor, "tensor")
+    return validated.norm(p=2, dim=1).mean().item()
+
+
+def mse_between(original: torch.Tensor, reconstructed: torch.Tensor) -> float:
+    original_f = validate_target_matrix(original, "original")
+    reconstructed_f = validate_target_matrix(reconstructed, "reconstructed")
+    if original_f.shape != reconstructed_f.shape:
+        raise ValueError(
+            f"Shape mismatch: original={original_f.shape} vs "
+            f"reconstructed={reconstructed_f.shape}"
+        )
+    return torch.mean((original_f - reconstructed_f) ** 2).item()
+
+
+def validation_train_mean_baseline_metrics(
+    *,
+    train_targets: torch.Tensor,
+    validation_targets: torch.Tensor,
+) -> dict[str, float]:
+    baseline = baseline_mean_reconstruction(train_targets, validation_targets)
+    summary = summarize_reconstruction(validation_targets, baseline)
+    return {
+        "validation_train_mean_baseline_fve": summary["fve"],
+        "validation_train_mean_baseline_mse": summary["mse"],
+    }
+
+
+def build_validation_metric_row(
+    *,
+    epoch: int,
+    train_loss: float,
+    target_transform_name: str,
+    validation_result: ValidationResult,
+    train_mean_baseline: dict[str, float],
+    is_best: bool,
+) -> dict[str, Any]:
+    metrics = validation_result.metrics
+    return {
+        "epoch": epoch,
+        "train_mse_loss": train_loss,
+        "target_transform": target_transform_name,
+        "validation_fve": metrics["fve"],
+        "validation_mse": metrics["mse"],
+        "validation_rmse": metrics["rmse"],
+        "validation_mean_l2_error": metrics["mean_l2_error"],
+        "validation_cosine_mean": metrics["cosine_mean"],
+        "validation_cosine_std": metrics["cosine_std"],
+        "validation_cosine_min": metrics["cosine_min"],
+        "validation_cosine_max": metrics["cosine_max"],
+        "validation_prediction_norm_mean": mean_norm(
+            validation_result.original_predictions
+        ),
+        "validation_target_norm_mean": mean_norm(
+            validation_result.transformed_targets
+        ),
+        "validation_original_norm_mean": mean_norm(
+            validation_result.original_targets
+        ),
+        "transformed_validation_mse": mse_between(
+            validation_result.transformed_targets,
+            validation_result.transformed_predictions,
+        ),
+        **train_mean_baseline,
+        "is_best": is_best,
+    }
+
+
+def build_per_example_validation_metrics(
+    *,
+    metadata_rows: list[dict],
+    original_targets: torch.Tensor,
+    original_predictions: torch.Tensor,
+) -> list[dict]:
+    squared_errors = per_example_squared_error(original_targets, original_predictions)
+    l2_errors = per_example_l2_error(original_targets, original_predictions)
+    cosine = per_example_cosine_similarity(original_targets, original_predictions)
+    target_norms = original_targets.detach().float().norm(p=2, dim=1)
+    prediction_norms = original_predictions.detach().float().norm(p=2, dim=1)
+
+    rows = []
+    for index, metadata in enumerate(metadata_rows):
+        rows.append(
+            {
+                "activation_index": int(metadata.get("activation_index", index)),
+                "example_id": metadata.get("example_id"),
+                "selected_text_field": metadata.get("ar_text_field"),
+                "squared_error": squared_errors[index].item(),
+                "l2_error": l2_errors[index].item(),
+                "cosine_similarity": cosine[index].item(),
+                "target_norm": target_norms[index].item(),
+                "prediction_norm": prediction_norms[index].item(),
+            }
+        )
+    return rows
 
 
 def move_inputs_to_device(
@@ -475,7 +776,8 @@ def evaluate(
     model: TextActivationReconstructor,
     dataloader: DataLoader,
     device: torch.device,
-) -> tuple[dict[str, float], torch.Tensor, torch.Tensor, list[dict]]:
+    target_transform: TargetTransform,
+) -> ValidationResult:
     model.eval()
     prediction_batches = []
     target_batches = []
@@ -491,8 +793,17 @@ def evaluate(
 
     predictions = torch.cat(prediction_batches, dim=0)
     targets = torch.cat(target_batches, dim=0)
-    metrics = summarize_reconstruction(targets, predictions)
-    return metrics, predictions, targets, metadata_rows
+    original_predictions = target_transform.inverse_transform(predictions)
+    original_targets = target_transform.inverse_transform(targets)
+    metrics = summarize_reconstruction(original_targets, original_predictions)
+    return ValidationResult(
+        metrics=metrics,
+        transformed_predictions=predictions,
+        transformed_targets=targets,
+        original_predictions=original_predictions,
+        original_targets=original_targets,
+        metadata_rows=metadata_rows,
+    )
 
 
 def write_metrics_csv(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -539,6 +850,7 @@ def checkpoint_payload(
     epoch: int,
     validation_metrics: dict[str, float],
     activation_artifact: ActivationArtifact,
+    target_transform: TargetTransform,
 ) -> dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
@@ -553,7 +865,9 @@ def checkpoint_payload(
             "text_field": args.text_field,
             "fallback_text_fields": args.fallback_text_fields,
             "max_length": args.max_length,
+            "target_transform": args.target_transform,
         },
+        "target_transform_state": target_transform.state_dict_for_checkpoint(),
         "epoch": epoch,
         "validation_metrics": validation_metrics,
         "activation_artifact_manifest_summary": copy_manifest_summary(
@@ -570,6 +884,7 @@ def save_checkpoint(
     epoch: int,
     validation_metrics: dict[str, float],
     activation_artifact: ActivationArtifact,
+    target_transform: TargetTransform,
 ) -> None:
     torch.save(
         checkpoint_payload(
@@ -578,6 +893,7 @@ def save_checkpoint(
             epoch=epoch,
             validation_metrics=validation_metrics,
             activation_artifact=activation_artifact,
+            target_transform=target_transform,
         ),
         path,
     )
@@ -585,6 +901,7 @@ def save_checkpoint(
 
 def main() -> None:
     args = parse_args()
+    target_transform_name = resolve_target_transform_arg(args)
     validate_args(args)
     set_seed(args.seed)
 
@@ -614,9 +931,17 @@ def main() -> None:
     prepare_output_dir(output_dir, args.overwrite)
     print(f"Text field: {args.text_field}")
     print(f"Fallback fields: {fallback_fields}")
+    print(f"Target transform: {target_transform_name}")
     print(f"Split strategy: {split_strategy}")
     print(f"Train examples: {len(train_indices)}")
     print(f"Validation examples: {len(validation_indices)}")
+    text_counts = text_field_counts(text_examples)
+    text_lengths = text_length_summary(text_examples)
+    print(f"Selected text fields: {text_counts}")
+    print(
+        "Text length chars: "
+        f"mean={text_lengths['mean_chars']:.1f}, max={text_lengths['max_chars']}"
+    )
     if args.verbose:
         first = text_examples[0]
         print(f"First example_id: {first.metadata.get('example_id')}")
@@ -638,10 +963,27 @@ def main() -> None:
     except Exception as exc:
         print_model_loading_error(exc)
         raise
+    train_tokenization = summarize_tokenization(
+        tokenizer,
+        text_examples,
+        train_indices,
+        max_length=args.max_length,
+    )
+    validation_tokenization = summarize_tokenization(
+        tokenizer,
+        text_examples,
+        validation_indices,
+        max_length=args.max_length,
+    )
     model = model.to(device=device)
     if training_dtype != torch.float32:
         model = model.to(dtype=training_dtype)
     print(f"Tokenizer class: {tokenizer.__class__.__name__}")
+    print(
+        "Tokenizer truncation count: "
+        f"train={train_tokenization['truncation_count']}, "
+        f"validation={validation_tokenization['truncation_count']}"
+    )
     print(f"Pooling: {args.pooling}")
     print(f"Freeze text model: {args.freeze_text_model}")
     print(f"Text hidden dim: {model.text_hidden_dim}")
@@ -658,15 +1000,29 @@ def main() -> None:
     print(f"Batch size: {args.batch_size}")
     print(f"Learning rate: {args.learning_rate}")
 
+    train_original_targets = artifact.activations[train_indices]
+    validation_original_targets = artifact.activations[validation_indices]
+    target_transform = TargetTransform.fit(target_transform_name, train_original_targets)
+    transformed_activations = target_transform.transform(artifact.activations)
+    train_mean_baseline = validation_train_mean_baseline_metrics(
+        train_targets=train_original_targets,
+        validation_targets=validation_original_targets,
+    )
+    print(
+        "Validation train-mean baseline: "
+        f"FVE={train_mean_baseline['validation_train_mean_baseline_fve']:.6f}, "
+        f"MSE={train_mean_baseline['validation_train_mean_baseline_mse']:.6f}"
+    )
+
     collate_fn = make_collate_fn(tokenizer, args.max_length)
     train_dataset = ARDataset(
         examples=text_examples,
-        activations=artifact.activations,
+        activations=transformed_activations,
         indices=train_indices,
     )
     validation_dataset = ARDataset(
         examples=text_examples,
-        activations=artifact.activations,
+        activations=transformed_activations,
         indices=validation_indices,
     )
     generator = torch.Generator()
@@ -699,6 +1055,7 @@ def main() -> None:
     best_targets: torch.Tensor | None = None
     best_metadata_rows: list[dict] | None = None
     best_metrics: dict[str, float] | None = None
+    best_per_example_rows: list[dict] | None = None
     for epoch in range(1, args.epochs + 1):
         train_loss = train_one_epoch(
             model=model,
@@ -707,19 +1064,26 @@ def main() -> None:
             device=device,
             tqdm=tqdm,
         )
-        validation_metrics, predictions, targets, validation_metadata = evaluate(
+        validation_result = evaluate(
             model=model,
             dataloader=validation_loader,
             device=device,
+            target_transform=target_transform,
         )
+        validation_metrics = validation_result.metrics
         is_best = validation_metrics["fve"] > best_fve
         if is_best:
             best_fve = validation_metrics["fve"]
             best_epoch = epoch
-            best_predictions = predictions
-            best_targets = targets
-            best_metadata_rows = validation_metadata
+            best_predictions = validation_result.original_predictions
+            best_targets = validation_result.original_targets
+            best_metadata_rows = validation_result.metadata_rows
             best_metrics = validation_metrics
+            best_per_example_rows = build_per_example_validation_metrics(
+                metadata_rows=validation_result.metadata_rows,
+                original_targets=validation_result.original_targets,
+                original_predictions=validation_result.original_predictions,
+            )
             save_checkpoint(
                 output_dir / "model.pt",
                 model=model,
@@ -727,6 +1091,7 @@ def main() -> None:
                 epoch=epoch,
                 validation_metrics=validation_metrics,
                 activation_artifact=artifact,
+                target_transform=target_transform,
             )
         if args.save_every_epoch:
             save_checkpoint(
@@ -736,50 +1101,59 @@ def main() -> None:
                 epoch=epoch,
                 validation_metrics=validation_metrics,
                 activation_artifact=artifact,
+                target_transform=target_transform,
             )
-        row = {
-            "epoch": epoch,
-            "train_mse_loss": train_loss,
-            "validation_fve": validation_metrics["fve"],
-            "validation_mse": validation_metrics["mse"],
-            "validation_rmse": validation_metrics["rmse"],
-            "validation_mean_l2_error": validation_metrics["mean_l2_error"],
-            "validation_cosine_mean": validation_metrics["cosine_mean"],
-            "validation_cosine_std": validation_metrics["cosine_std"],
-            "validation_cosine_min": validation_metrics["cosine_min"],
-            "validation_cosine_max": validation_metrics["cosine_max"],
-            "is_best": is_best,
-        }
+        row = build_validation_metric_row(
+            epoch=epoch,
+            train_loss=train_loss,
+            target_transform_name=target_transform.name,
+            validation_result=validation_result,
+            train_mean_baseline=train_mean_baseline,
+            is_best=is_best,
+        )
         metrics_rows.append(row)
         print(
             f"epoch {epoch:03d}: train_mse={train_loss:.6f}, "
             f"val_fve={validation_metrics['fve']:.6f}, "
             f"val_rmse={validation_metrics['rmse']:.6f}, "
-            f"val_cosine={validation_metrics['cosine_mean']:.6f}"
+            f"val_cosine={validation_metrics['cosine_mean']:.6f}, "
+            f"train_mean_fve={train_mean_baseline['validation_train_mean_baseline_fve']:.6f}"
         )
 
     if best_predictions is None or best_targets is None or best_metadata_rows is None:
         raise ValueError("Training finished without a best validation checkpoint.")
     if best_metrics is None:
         raise ValueError("Training finished without best validation metrics.")
+    if best_per_example_rows is None:
+        raise ValueError("Training finished without best per-example metrics.")
 
     print_section(6, 8, "Validation")
     print(f"Best epoch: {best_epoch}")
     print(f"Best validation FVE: {best_metrics['fve']:.6f}")
     print(f"Best validation RMSE: {best_metrics['rmse']:.6f}")
     print(f"Best validation cosine mean: {best_metrics['cosine_mean']:.6f}")
+    print(
+        "Validation train-mean baseline FVE: "
+        f"{train_mean_baseline['validation_train_mean_baseline_fve']:.6f}"
+    )
+    print(
+        "Beats validation train-mean baseline: "
+        f"{best_metrics['fve'] > train_mean_baseline['validation_train_mean_baseline_fve']}"
+    )
 
     print_section(7, 8, "Writing outputs")
     metrics_csv = output_dir / "training_metrics.csv"
     predictions_path = output_dir / "validation_predictions.pt"
     targets_path = output_dir / "validation_targets.pt"
     metadata_path = output_dir / "validation_metadata.jsonl"
+    per_example_path = output_dir / "validation_per_example_metrics.jsonl"
     manifest_path = output_dir / "train_ar_manifest.json"
 
     write_metrics_csv(metrics_csv, metrics_rows)
     torch.save(best_predictions, predictions_path)
     torch.save(best_targets, targets_path)
     write_jsonl(metadata_path, best_metadata_rows)
+    write_jsonl(per_example_path, best_per_example_rows)
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "generated_at": datetime.now(UTC).isoformat(),
@@ -790,10 +1164,19 @@ def main() -> None:
         "text_model_name_or_path": args.text_model_name_or_path,
         "text_field": args.text_field,
         "fallback_text_fields": fallback_fields,
+        "text_field_counts": text_counts,
+        "text_length_summary": text_lengths,
+        "tokenization_max_length": args.max_length,
+        "tokenization_summary": {
+            "train": train_tokenization,
+            "validation": validation_tokenization,
+        },
         "pooling": args.pooling,
         "projection_hidden_dim": args.projection_hidden_dim,
         "dropout": args.dropout,
         "freeze_text_model": args.freeze_text_model,
+        "target_transform": target_transform.name,
+        "target_transform_state": target_transform.state_dict_for_manifest(),
         "num_examples": artifact.num_examples,
         "activation_dim": artifact.activation_dim,
         "train_count": len(train_indices),
@@ -801,6 +1184,11 @@ def main() -> None:
         "split_strategy": split_strategy,
         "best_epoch": best_epoch,
         "best_validation_metrics": best_metrics,
+        "validation_train_mean_baseline": train_mean_baseline,
+        "beats_validation_train_mean_baseline": (
+            best_metrics["fve"]
+            > train_mean_baseline["validation_train_mean_baseline_fve"]
+        ),
         "baseline_metrics_json": str(args.baseline_metrics_json)
         if args.baseline_metrics_json
         else None,
@@ -811,6 +1199,7 @@ def main() -> None:
             "validation_predictions": predictions_path.name,
             "validation_targets": targets_path.name,
             "validation_metadata": metadata_path.name,
+            "validation_per_example_metrics": per_example_path.name,
             "manifest": manifest_path.name,
         },
     }
@@ -821,12 +1210,13 @@ def main() -> None:
         predictions_path,
         targets_path,
         metadata_path,
+        per_example_path,
         manifest_path,
     ):
         print(f"Wrote {path}")
 
     print_section(8, 8, "Result")
-    print("SUCCESS: Phase 5 AR training completed successfully.")
+    print("SUCCESS: Phase 5b AR diagnostics training completed successfully.")
 
 
 if __name__ == "__main__":

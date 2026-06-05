@@ -1,0 +1,39 @@
+phase: 5b
+name: ar_diagnostics_target_transform_comparison
+
+defaults:
+  activation_dir: outputs/activations/pilot_100_qwen25_coder_15b_l19_ctx512
+  text_model_name_or_path: distilbert-base-uncased
+  fallback_text_fields: prompt,code
+  freeze_text_model: true
+  epochs: 40
+  batch_size: 16
+  learning_rate: 1.0e-3
+  max_length: 256
+  seed: 42
+
+runs:
+  - name: refdesc_center
+    output_dir: outputs/checkpoints/ar/pilot_100_qwen25_coder_15b_l19_ctx512_refdesc_distilbert_center
+    text_field: reference_description
+    target_transform: center
+
+  - name: refdesc_standardize
+    output_dir: outputs/checkpoints/ar/pilot_100_qwen25_coder_15b_l19_ctx512_refdesc_distilbert_standardize
+    text_field: reference_description
+    target_transform: standardize
+
+  - name: code_center
+    output_dir: outputs/checkpoints/ar/pilot_100_qwen25_coder_15b_l19_ctx512_code_distilbert_center
+    text_field: code
+    target_transform: center
+
+optional_runs:
+  - name: refdesc_center_unfrozen
+    output_dir: outputs/checkpoints/ar/pilot_100_qwen25_coder_15b_l19_ctx512_refdesc_distilbert_center_unfrozen
+    text_field: reference_description
+    target_transform: center
+    freeze_text_model: false
+    epochs: 10
+    batch_size: 8
+    learning_rate: 2.0e-5
