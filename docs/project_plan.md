@@ -6,7 +6,7 @@ This document is the active roadmap for the project. These phase numbers are the
 
 **Current phase:** Phase 6c — AR training on larger data.
 
-**Immediate next step:** run the code-text AR comparison.
+**Immediate next step:** run a longer code-text AR training run or proceed to the first AV implementation.
 
 ## Phase 1 — Define research question and scope
 
@@ -91,13 +91,19 @@ This document is the active roadmap for the project. These phase numbers are the
 
 ### Phase 6c — AR training on larger data
 
-| Setup | Text field | Target transform | Best epoch | Validation FVE | Beats train-mean baseline? |
-|---|---|---|---:|---:|---|
-| refdesc DistilBERT frozen | `reference_description` | standardize | 12 | 0.095719 | yes |
+| Setup | Text field | Target transform | Best epoch | Validation FVE | Validation RMSE | Beats train-mean baseline? |
+|---|---|---|---:|---:|---:|---|
+| refdesc DistilBERT frozen | `reference_description` | standardize | 12 | 0.095719 | 0.460551 | yes |
+| code DistilBERT frozen | `code` | standardize | 20 | 0.238927 | 0.422512 | yes |
 
-**Report:** `docs/phase_results/phase_06c_scaled_ar_refdesc.md`
+**Reports:**
 
-**Status:** In progress. Next run: code-text comparison.
+- `docs/phase_results/phase_06c_scaled_ar_refdesc.md`
+- `docs/phase_results/phase_06c_scaled_ar_code.md`
+
+**Decision:** The current best AR baseline uses `text_field=code`, `target_transform=standardize`, and a frozen DistilBERT encoder.
+
+**Status:** In progress.
 
 ## Phase 7 — Implement AV
 
