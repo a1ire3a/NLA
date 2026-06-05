@@ -1,0 +1,23 @@
+phase: 7
+name: av_baseline_refdesc_distilgpt2
+
+activation_dir: outputs/activations/train_qwen25_coder_15b_l19_ctx512
+validation_activation_dir: outputs/activations/validation_qwen25_coder_15b_l19_ctx512
+output_dir: outputs/checkpoints/av/train5000_val500_qwen25_coder_15b_l19_ctx512_refdesc_distilgpt2
+
+text_model_name_or_path: distilgpt2
+target_text_field: reference_description
+fallback_text_fields: code,prompt
+freeze_lm: false
+
+training:
+  epochs: 5
+  batch_size: 8
+  learning_rate: 5.0e-5
+  max_target_length: 64
+  seed: 42
+
+generation:
+  output_jsonl: outputs/reports/av/validation_refdesc_distilgpt2_generations.jsonl
+  limit: 50
+  max_new_tokens: 64
