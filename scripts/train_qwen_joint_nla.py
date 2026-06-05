@@ -5,8 +5,10 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import shutil
 import sys
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -192,6 +194,24 @@ def validate_args(args: argparse.Namespace) -> None:
 
 def print_section(index: int, total: int, label: str) -> None:
     print(f"\n[{index}/{total}] {label}", flush=True)
+
+
+def print_epoch_step(epoch: int, total_epochs: int, label: str) -> None:
+    print(f"\nEpoch {epoch}/{total_epochs}: {label}", flush=True)
+
+
+def generation_work_summary(
+    *,
+    num_examples: int,
+    batch_size: int,
+    max_new_tokens: int,
+) -> str:
+    num_batches = math.ceil(num_examples / batch_size)
+    max_forwards = num_batches * max_new_tokens
+    return (
+        f"{num_examples} examples, {num_batches} batches, "
+        f"up to {max_forwards} autoregressive forwards"
+    )
 
 
 def subset_artifact(artifact: ActivationArtifact, limit: int | None) -> ActivationArtifact:
@@ -503,6 +523,9 @@ def generate_for_artifact(
     device: torch.device,
     batch_size: int,
     max_new_tokens: int,
+    tqdm=None,
+    desc: str = "generate",
+    log_every_batches: int = 0,
 ) -> list[dict[str, Any]]:
     examples = build_qwen_av_examples(
         artifact=artifact,
@@ -516,6 +539,9 @@ def generate_for_artifact(
         device=device,
         batch_size=batch_size,
         max_new_tokens=max_new_tokens,
+        tqdm=tqdm,
+        desc=desc,
+        log_every_batches=log_every_batches,
     )
 
 
@@ -529,10 +555,16 @@ def reconstruct_generated_text(
     device: torch.device,
     batch_size: int,
     max_ar_length: int,
+    tqdm=None,
+    desc: str = "reconstruct",
+    log_every_batches: int = 0,
 ) -> torch.Tensor:
     model.eval()
     prediction_batches = []
-    for start in range(0, len(generated_rows), batch_size):
+    starts = range(0, len(generated_rows), batch_size)
+    iterator = tqdm(starts, desc=desc, leave=False) if tqdm is not None else starts
+    total_batches = (len(generated_rows) + batch_size - 1) // batch_size
+    for batch_number, start in enumerate(iterator, start=1):
         batch_rows = generated_rows[start : start + batch_size]
         tokenized = tokenizer(
             [row["generated_text"] for row in batch_rows],
@@ -550,6 +582,15 @@ def reconstruct_generated_text(
             attention_mask = attention_mask.to(device)
         predictions = model(input_ids=input_ids, attention_mask=attention_mask)
         prediction_batches.append(predictions.detach().cpu().float())
+        if log_every_batches and (
+            batch_number % log_every_batches == 0 or batch_number == total_batches
+        ):
+            completed = min(batch_number * batch_size, len(generated_rows))
+            print(
+                f"{desc}: {batch_number}/{total_batches} batches "
+                f"({completed}/{len(generated_rows)} examples)",
+                flush=True,
+            )
     if not prediction_batches:
         raise ValueError("No generated rows were available for AR reconstruction.")
     transformed = torch.cat(prediction_batches, dim=0)
@@ -601,6 +642,9 @@ def evaluate_full_loop(
     max_new_tokens: int,
     max_ar_length: int,
     seed: int,
+    tqdm=None,
+    desc_prefix: str = "validation",
+    log_every_batches: int = 10,
 ) -> tuple[dict[str, float], torch.Tensor, list[dict[str, Any]]]:
     generated_rows = generate_for_artifact(
         model=av_model,
@@ -611,6 +655,9 @@ def evaluate_full_loop(
         device=device,
         batch_size=batch_size,
         max_new_tokens=max_new_tokens,
+        tqdm=tqdm,
+        desc=f"{desc_prefix}-generate",
+        log_every_batches=log_every_batches,
     )
     predictions = reconstruct_generated_text(
         model=ar_model,
@@ -620,6 +667,9 @@ def evaluate_full_loop(
         device=device,
         batch_size=batch_size,
         max_ar_length=max_ar_length,
+        tqdm=tqdm,
+        desc=f"{desc_prefix}-ar",
+        log_every_batches=log_every_batches,
     )
     if predictions.shape != validation_artifact.activations.shape:
         raise ValueError(
@@ -895,6 +945,9 @@ def main() -> None:
     best_train_generated_rows: list[dict[str, Any]] | None = None
     output_files: dict[str, str] = {}
     for epoch in range(1, args.epochs + 1):
+        epoch_start = time.perf_counter()
+        print_epoch_step(epoch, args.epochs, "training AV")
+        av_start = time.perf_counter()
         av_train_loss = train_av_one_epoch(
             model=av_model,
             dataloader=av_train_loader,
@@ -904,6 +957,22 @@ def main() -> None:
             loss_weight=args.av_loss_weight,
             tqdm=tqdm,
         )
+        print(
+            f"Epoch {epoch}/{args.epochs}: AV training done in "
+            f"{time.perf_counter() - av_start:.1f}s, loss={av_train_loss:.6f}",
+            flush=True,
+        )
+        train_generation_summary = generation_work_summary(
+            num_examples=train_artifact.num_examples,
+            batch_size=args.batch_size,
+            max_new_tokens=args.max_new_tokens,
+        )
+        print_epoch_step(
+            epoch,
+            args.epochs,
+            f"generating train explanations ({train_generation_summary})",
+        )
+        generation_start = time.perf_counter()
         train_generated_rows = generate_for_artifact(
             model=av_model,
             tokenizer=tokenizer,
@@ -913,7 +982,16 @@ def main() -> None:
             device=device,
             batch_size=args.batch_size,
             max_new_tokens=args.max_new_tokens,
+            tqdm=tqdm,
+            desc=f"epoch-{epoch}-train-generate",
+            log_every_batches=10,
         )
+        print(
+            f"Epoch {epoch}/{args.epochs}: train generation done in "
+            f"{time.perf_counter() - generation_start:.1f}s",
+            flush=True,
+        )
+        print_epoch_step(epoch, args.epochs, "building generated-text AR dataset")
         ar_train_examples = build_generated_anchor_examples(
             artifact=train_artifact,
             generated_rows=train_generated_rows,
@@ -928,6 +1006,8 @@ def main() -> None:
             collate_fn=ar_collate_fn,
             generator=torch.Generator().manual_seed(args.seed + epoch),
         )
+        print_epoch_step(epoch, args.epochs, "training AR")
+        ar_start = time.perf_counter()
         ar_losses = train_ar_one_epoch(
             model=ar_model,
             dataloader=ar_train_loader,
@@ -938,11 +1018,29 @@ def main() -> None:
             anchor_loss_weight=args.ar_anchor_loss_weight,
             tqdm=tqdm,
         )
+        print(
+            f"Epoch {epoch}/{args.epochs}: AR training done in "
+            f"{time.perf_counter() - ar_start:.1f}s, "
+            f"generated_mse={ar_losses['ar_generated_train_mse']:.6f}, "
+            f"anchor_mse={ar_losses['ar_anchor_train_mse']:.6f}",
+            flush=True,
+        )
 
         should_evaluate = args.eval_every_epoch or epoch == args.epochs
         validation_metrics = empty_validation_metrics()
         is_best = False
         if should_evaluate:
+            validation_generation_summary = generation_work_summary(
+                num_examples=validation_artifact.num_examples,
+                batch_size=args.batch_size,
+                max_new_tokens=args.max_new_tokens,
+            )
+            print_epoch_step(
+                epoch,
+                args.epochs,
+                f"evaluating full loop ({validation_generation_summary})",
+            )
+            eval_start = time.perf_counter()
             validation_metrics, predictions, validation_generated_rows = evaluate_full_loop(
                 av_model=av_model,
                 ar_model=ar_model,
@@ -956,9 +1054,20 @@ def main() -> None:
                 max_new_tokens=args.max_new_tokens,
                 max_ar_length=args.max_ar_length,
                 seed=args.seed,
+                tqdm=tqdm,
+                desc_prefix=f"epoch-{epoch}-validation",
+                log_every_batches=10,
+            )
+            print(
+                f"Epoch {epoch}/{args.epochs}: evaluation done in "
+                f"{time.perf_counter() - eval_start:.1f}s, "
+                f"validation_fve={validation_metrics['validation_nla_fve']:.6f}, "
+                f"validation_mse={validation_metrics['validation_nla_mse']:.6f}",
+                flush=True,
             )
             is_best = validation_metrics["validation_nla_fve"] > best_fve
             if is_best:
+                print_epoch_step(epoch, args.epochs, "saving best joint checkpoint")
                 best_fve = validation_metrics["validation_nla_fve"]
                 best_epoch = epoch
                 best_metrics = validation_metrics
@@ -977,6 +1086,8 @@ def main() -> None:
                     epoch=epoch,
                     validation_metrics=validation_metrics,
                 )
+        else:
+            print_epoch_step(epoch, args.epochs, "skipping validation until final epoch")
 
         metrics_rows.append(
             metric_row(
@@ -992,7 +1103,9 @@ def main() -> None:
             f"epoch {epoch:03d}: av_loss={av_train_loss:.6f}, "
             f"ar_gen_mse={ar_losses['ar_generated_train_mse']:.6f}, "
             f"ar_anchor_mse={ar_losses['ar_anchor_train_mse']:.6f}, "
-            f"validation_fve={validation_metrics['validation_nla_fve']:.6f}"
+            f"validation_fve={validation_metrics['validation_nla_fve']:.6f}, "
+            f"elapsed={time.perf_counter() - epoch_start:.1f}s",
+            flush=True,
         )
 
     if (

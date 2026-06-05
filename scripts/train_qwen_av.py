@@ -299,10 +299,16 @@ def generate_rows(
     device: torch.device,
     batch_size: int,
     max_new_tokens: int,
+    tqdm=None,
+    desc: str = "generate",
+    log_every_batches: int = 0,
 ) -> list[dict[str, Any]]:
     model.eval()
     rows = []
-    for start in range(0, len(examples), batch_size):
+    starts = range(0, len(examples), batch_size)
+    iterator = tqdm(starts, desc=desc, leave=False) if tqdm is not None else starts
+    total_batches = (len(examples) + batch_size - 1) // batch_size
+    for batch_number, start in enumerate(iterator, start=1):
         batch_examples = examples[start : start + batch_size]
         activations = torch.stack([item.activation for item in batch_examples], dim=0).to(device)
         generated_ids = model.greedy_generate(
@@ -328,6 +334,14 @@ def generate_rows(
                     "language": metadata.get("language"),
                     "transformation_type": metadata.get("transformation_type"),
                 }
+            )
+        if log_every_batches and (
+            batch_number % log_every_batches == 0 or batch_number == total_batches
+        ):
+            print(
+                f"{desc}: {batch_number}/{total_batches} batches "
+                f"({len(rows)}/{len(examples)} examples)",
+                flush=True,
             )
     return rows
 
