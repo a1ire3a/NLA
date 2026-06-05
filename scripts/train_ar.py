@@ -186,6 +186,18 @@ class ValidationResult:
     metadata_rows: list[dict]
 
 
+@dataclass(frozen=True)
+class TrainValidationData:
+    train_artifact: ActivationArtifact
+    validation_artifact: ActivationArtifact
+    train_examples: list[TextExample]
+    validation_examples: list[TextExample]
+    train_indices: list[int]
+    validation_indices: list[int]
+    split_strategy: str
+    uses_external_validation: bool
+
+
 class ARDataset(Dataset):
     """Torch dataset for selected text inputs and activation targets."""
 
@@ -219,6 +231,7 @@ def parse_args() -> argparse.Namespace:
         description="Train a lightweight text-to-activation AR baseline."
     )
     parser.add_argument("--activation_dir", required=True)
+    parser.add_argument("--validation_activation_dir", default=None)
     parser.add_argument("--output_dir", required=True)
     parser.add_argument(
         "--text_model_name_or_path",
@@ -417,6 +430,66 @@ def split_train_validation_indices(
     train = [index for index in range(num_examples) if index not in validation_set]
     validation = [index for index in range(num_examples) if index in validation_set]
     return train, validation, "deterministic_random_split"
+
+
+def build_train_validation_data(
+    *,
+    train_artifact: ActivationArtifact,
+    validation_artifact: ActivationArtifact | None,
+    text_field: str,
+    fallback_text_fields: list[str],
+    validation_fraction: float,
+    seed: int,
+) -> TrainValidationData:
+    train_examples = build_text_examples(
+        train_artifact.metadata_rows,
+        text_field=text_field,
+        fallback_text_fields=fallback_text_fields,
+    )
+    if validation_artifact is not None:
+        if validation_artifact.activation_dim != train_artifact.activation_dim:
+            raise ValueError(
+                "External validation activation dim does not match train activation dim: "
+                f"{validation_artifact.activation_dim} vs {train_artifact.activation_dim}"
+            )
+        validation_examples = build_text_examples(
+            validation_artifact.metadata_rows,
+            text_field=text_field,
+            fallback_text_fields=fallback_text_fields,
+        )
+        return TrainValidationData(
+            train_artifact=train_artifact,
+            validation_artifact=validation_artifact,
+            train_examples=train_examples,
+            validation_examples=validation_examples,
+            train_indices=list(range(train_artifact.num_examples)),
+            validation_indices=list(range(validation_artifact.num_examples)),
+            split_strategy="external_validation_artifact",
+            uses_external_validation=True,
+        )
+
+    train_indices, validation_indices, split_strategy = split_train_validation_indices(
+        train_artifact.metadata_rows,
+        validation_fraction=validation_fraction,
+        seed=seed,
+    )
+    return TrainValidationData(
+        train_artifact=train_artifact,
+        validation_artifact=train_artifact,
+        train_examples=train_examples,
+        validation_examples=train_examples,
+        train_indices=train_indices,
+        validation_indices=validation_indices,
+        split_strategy=split_strategy,
+        uses_external_validation=False,
+    )
+
+
+def subset_examples(
+    examples: list[TextExample],
+    indices: list[int],
+) -> list[TextExample]:
+    return [examples[index] for index in indices]
 
 
 def load_activation_artifact(activation_dir: Path) -> ActivationArtifact:
@@ -905,29 +978,42 @@ def main() -> None:
     validate_args(args)
     set_seed(args.seed)
 
-    activation_dir = Path(args.activation_dir)
+    train_activation_dir = Path(args.activation_dir)
+    validation_activation_dir = (
+        Path(args.validation_activation_dir) if args.validation_activation_dir else None
+    )
     output_dir = Path(args.output_dir)
     fallback_fields = parse_fallback_fields(args.fallback_text_fields)
     training_dtype = dtype_from_arg(args.dtype)
     device = resolve_device(args.device)
 
-    print_section(1, 8, "Loading activation artifact")
-    artifact = load_activation_artifact(activation_dir)
+    print_section(1, 8, "Loading activation artifacts")
+    train_artifact = load_activation_artifact(train_activation_dir)
+    validation_artifact = (
+        load_activation_artifact(validation_activation_dir)
+        if validation_activation_dir is not None
+        else None
+    )
     baseline_metrics = load_optional_baseline_metrics(args.baseline_metrics_json)
-    print(f"Activations: {tuple(artifact.activations.shape)}")
-    print(f"Activation dtype for training targets: {artifact.activations.dtype}")
+    print(f"Train activations: {tuple(train_artifact.activations.shape)}")
+    if validation_artifact is not None:
+        print(f"Validation activations: {tuple(validation_artifact.activations.shape)}")
+    print(f"Activation dtype for training targets: {train_artifact.activations.dtype}")
 
     print_section(2, 8, "Building AR dataset")
-    text_examples = build_text_examples(
-        artifact.metadata_rows,
+    data = build_train_validation_data(
+        train_artifact=train_artifact,
+        validation_artifact=validation_artifact,
         text_field=args.text_field,
         fallback_text_fields=fallback_fields,
-    )
-    train_indices, validation_indices, split_strategy = split_train_validation_indices(
-        artifact.metadata_rows,
         validation_fraction=args.validation_fraction,
         seed=args.seed,
     )
+    train_examples = data.train_examples
+    validation_examples = data.validation_examples
+    train_indices = data.train_indices
+    validation_indices = data.validation_indices
+    split_strategy = data.split_strategy
     prepare_output_dir(output_dir, args.overwrite)
     print(f"Text field: {args.text_field}")
     print(f"Fallback fields: {fallback_fields}")
@@ -935,15 +1021,29 @@ def main() -> None:
     print(f"Split strategy: {split_strategy}")
     print(f"Train examples: {len(train_indices)}")
     print(f"Validation examples: {len(validation_indices)}")
-    text_counts = text_field_counts(text_examples)
-    text_lengths = text_length_summary(text_examples)
+    train_text_counts = text_field_counts(subset_examples(train_examples, train_indices))
+    validation_text_counts = text_field_counts(
+        subset_examples(validation_examples, validation_indices)
+    )
+    train_text_lengths = text_length_summary(subset_examples(train_examples, train_indices))
+    validation_text_lengths = text_length_summary(
+        subset_examples(validation_examples, validation_indices)
+    )
+    text_counts = {"train": train_text_counts, "validation": validation_text_counts}
+    text_lengths = {"train": train_text_lengths, "validation": validation_text_lengths}
     print(f"Selected text fields: {text_counts}")
     print(
-        "Text length chars: "
-        f"mean={text_lengths['mean_chars']:.1f}, max={text_lengths['max_chars']}"
+        "Train text length chars: "
+        f"mean={train_text_lengths['mean_chars']:.1f}, "
+        f"max={train_text_lengths['max_chars']}"
+    )
+    print(
+        "Validation text length chars: "
+        f"mean={validation_text_lengths['mean_chars']:.1f}, "
+        f"max={validation_text_lengths['max_chars']}"
     )
     if args.verbose:
-        first = text_examples[0]
+        first = train_examples[train_indices[0]]
         print(f"First example_id: {first.metadata.get('example_id')}")
         print(f"First selected text field: {first.selected_text_field}")
 
@@ -954,7 +1054,7 @@ def main() -> None:
         ensure_tokenizer_padding(tokenizer)
         model = TextActivationReconstructor(
             text_model_name_or_path=args.text_model_name_or_path,
-            activation_dim=artifact.activation_dim,
+            activation_dim=train_artifact.activation_dim,
             pooling=args.pooling,
             projection_hidden_dim=args.projection_hidden_dim,
             dropout=args.dropout,
@@ -965,13 +1065,13 @@ def main() -> None:
         raise
     train_tokenization = summarize_tokenization(
         tokenizer,
-        text_examples,
+        train_examples,
         train_indices,
         max_length=args.max_length,
     )
     validation_tokenization = summarize_tokenization(
         tokenizer,
-        text_examples,
+        validation_examples,
         validation_indices,
         max_length=args.max_length,
     )
@@ -987,7 +1087,7 @@ def main() -> None:
     print(f"Pooling: {args.pooling}")
     print(f"Freeze text model: {args.freeze_text_model}")
     print(f"Text hidden dim: {model.text_hidden_dim}")
-    print(f"Activation dim: {artifact.activation_dim}")
+    print(f"Activation dim: {train_artifact.activation_dim}")
 
     print_section(4, 8, "Training setup")
     trainable_parameters = count_trainable_parameters(model)
@@ -1000,10 +1100,13 @@ def main() -> None:
     print(f"Batch size: {args.batch_size}")
     print(f"Learning rate: {args.learning_rate}")
 
-    train_original_targets = artifact.activations[train_indices]
-    validation_original_targets = artifact.activations[validation_indices]
+    train_original_targets = train_artifact.activations[train_indices]
+    validation_original_targets = data.validation_artifact.activations[validation_indices]
     target_transform = TargetTransform.fit(target_transform_name, train_original_targets)
-    transformed_activations = target_transform.transform(artifact.activations)
+    transformed_train_activations = target_transform.transform(train_artifact.activations)
+    transformed_validation_activations = target_transform.transform(
+        data.validation_artifact.activations
+    )
     train_mean_baseline = validation_train_mean_baseline_metrics(
         train_targets=train_original_targets,
         validation_targets=validation_original_targets,
@@ -1016,13 +1119,13 @@ def main() -> None:
 
     collate_fn = make_collate_fn(tokenizer, args.max_length)
     train_dataset = ARDataset(
-        examples=text_examples,
-        activations=transformed_activations,
+        examples=train_examples,
+        activations=transformed_train_activations,
         indices=train_indices,
     )
     validation_dataset = ARDataset(
-        examples=text_examples,
-        activations=transformed_activations,
+        examples=validation_examples,
+        activations=transformed_validation_activations,
         indices=validation_indices,
     )
     generator = torch.Generator()
@@ -1090,7 +1193,7 @@ def main() -> None:
                 args=args,
                 epoch=epoch,
                 validation_metrics=validation_metrics,
-                activation_artifact=artifact,
+                activation_artifact=train_artifact,
                 target_transform=target_transform,
             )
         if args.save_every_epoch:
@@ -1100,7 +1203,7 @@ def main() -> None:
                 args=args,
                 epoch=epoch,
                 validation_metrics=validation_metrics,
-                activation_artifact=artifact,
+                activation_artifact=train_artifact,
                 target_transform=target_transform,
             )
         row = build_validation_metric_row(
@@ -1158,9 +1261,23 @@ def main() -> None:
         "schema_version": SCHEMA_VERSION,
         "generated_at": datetime.now(UTC).isoformat(),
         "cli_args": vars(args),
-        "activation_dir": str(activation_dir),
+        "activation_dir": str(train_activation_dir),
+        "train_activation_dir": str(train_activation_dir),
+        "validation_activation_dir": str(validation_activation_dir)
+        if validation_activation_dir is not None
+        else None,
         "output_dir": str(output_dir),
-        "activation_artifact_manifest_summary": copy_manifest_summary(artifact.manifest),
+        "activation_artifact_manifest_summary": copy_manifest_summary(
+            train_artifact.manifest
+        ),
+        "train_activation_artifact_manifest_summary": copy_manifest_summary(
+            train_artifact.manifest
+        ),
+        "validation_activation_artifact_manifest_summary": (
+            copy_manifest_summary(data.validation_artifact.manifest)
+            if data.uses_external_validation
+            else None
+        ),
         "text_model_name_or_path": args.text_model_name_or_path,
         "text_field": args.text_field,
         "fallback_text_fields": fallback_fields,
@@ -1177,11 +1294,14 @@ def main() -> None:
         "freeze_text_model": args.freeze_text_model,
         "target_transform": target_transform.name,
         "target_transform_state": target_transform.state_dict_for_manifest(),
-        "num_examples": artifact.num_examples,
-        "activation_dim": artifact.activation_dim,
+        "num_examples": train_artifact.num_examples,
+        "train_num_examples": train_artifact.num_examples,
+        "validation_num_examples": data.validation_artifact.num_examples,
+        "activation_dim": train_artifact.activation_dim,
         "train_count": len(train_indices),
         "validation_count": len(validation_indices),
         "split_strategy": split_strategy,
+        "uses_external_validation": data.uses_external_validation,
         "best_epoch": best_epoch,
         "best_validation_metrics": best_metrics,
         "validation_train_mean_baseline": train_mean_baseline,

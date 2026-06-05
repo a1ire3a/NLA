@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 import pytest
 import torch
 
 from scripts.train_ar import (
+    ActivationArtifact,
     TargetTransform,
     build_text_examples,
     build_per_example_validation_metrics,
+    build_train_validation_data,
     resolve_target_transform_arg,
     select_text_for_row,
     split_train_validation_indices,
@@ -16,6 +19,26 @@ from scripts.train_ar import (
     text_length_summary,
     validation_train_mean_baseline_metrics,
 )
+
+
+def fake_artifact(name: str, activations: torch.Tensor, split: str) -> ActivationArtifact:
+    rows = [
+        {
+            "activation_index": index,
+            "example_id": f"{name}_{index}",
+            "split": split,
+            "reference_description": f"description {index}",
+            "prompt": f"prompt {index}",
+            "code": f"code {index}",
+        }
+        for index in range(activations.shape[0])
+    ]
+    return ActivationArtifact(
+        activation_dir=Path(name),
+        activations=activations,
+        metadata_rows=rows,
+        manifest={"num_examples": activations.shape[0], "activation_dim": activations.shape[1]},
+    )
 
 
 def test_text_fallback_uses_reference_description_first() -> None:
@@ -127,6 +150,62 @@ def test_explicit_train_validation_split_is_respected() -> None:
     assert strategy == "metadata_split"
     assert train == [0, 2]
     assert validation == [1]
+
+
+def test_build_train_validation_data_internal_split_unchanged() -> None:
+    artifact = fake_artifact("train", torch.zeros((10, 3)), "pilot")
+
+    data = build_train_validation_data(
+        train_artifact=artifact,
+        validation_artifact=None,
+        text_field="reference_description",
+        fallback_text_fields=["prompt", "code"],
+        validation_fraction=0.2,
+        seed=42,
+    )
+
+    assert data.uses_external_validation is False
+    assert data.train_artifact is artifact
+    assert data.validation_artifact is artifact
+    assert data.split_strategy == "deterministic_random_split"
+    assert len(data.train_indices) == 8
+    assert len(data.validation_indices) == 2
+
+
+def test_build_train_validation_data_external_validation_uses_all_rows() -> None:
+    train_artifact = fake_artifact("train", torch.zeros((4, 3)), "train")
+    validation_artifact = fake_artifact("validation", torch.zeros((2, 3)), "validation")
+
+    data = build_train_validation_data(
+        train_artifact=train_artifact,
+        validation_artifact=validation_artifact,
+        text_field="reference_description",
+        fallback_text_fields=["prompt", "code"],
+        validation_fraction=0.2,
+        seed=42,
+    )
+
+    assert data.uses_external_validation is True
+    assert data.split_strategy == "external_validation_artifact"
+    assert data.train_indices == [0, 1, 2, 3]
+    assert data.validation_indices == [0, 1]
+    assert data.validation_artifact is validation_artifact
+    assert data.validation_examples[0].metadata["example_id"] == "validation_0"
+
+
+def test_build_train_validation_data_external_dim_mismatch_error() -> None:
+    train_artifact = fake_artifact("train", torch.zeros((4, 3)), "train")
+    validation_artifact = fake_artifact("validation", torch.zeros((2, 4)), "validation")
+
+    with pytest.raises(ValueError, match="activation dim does not match"):
+        build_train_validation_data(
+            train_artifact=train_artifact,
+            validation_artifact=validation_artifact,
+            text_field="reference_description",
+            fallback_text_fields=["prompt", "code"],
+            validation_fraction=0.2,
+            seed=42,
+        )
 
 
 def test_target_transform_raw_identity() -> None:
