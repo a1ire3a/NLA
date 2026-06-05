@@ -4,25 +4,19 @@ This document is the active roadmap for the project. These phase numbers are the
 
 ## Current Phase
 
-**Current phase:** Phase 8 — Connect the full NLA loop.
+**Current phase:** Phase 9 — Controlled evaluations.
 
-**Immediate next step:** run the full NLA loop again with the reference-description AR checkpoint to isolate AR/AV text-distribution mismatch.
+**Immediate next step:** run the current full NLA loop on the three controlled test activation artifacts.
 
 ## Phase 1 — Define research question and scope
-
-**Goal:** Define the project as a compact AI4Code adaptation of Natural Language Autoencoders.
 
 **Status:** Complete.
 
 ## Phase 2 — Build environment and verify model access
 
-**Goal:** Validate CUDA, model loading, hidden-state extraction, and `inputs_embeds` compatibility.
-
 **Status:** Complete.
 
 ## Phase 3 — Prepare datasets
-
-**Goal:** Convert raw datasets into project-standard JSONL files.
 
 | File | Rows |
 |---|---:|
@@ -36,8 +30,6 @@ This document is the active roadmap for the project. These phase numbers are the
 **Status:** Complete.
 
 ## Phase 4 — Extract and validate pilot activations
-
-**Goal:** Extract pilot activations and select a context length.
 
 **Decision:** Use `max_length=512` for main-model extraction.
 
@@ -70,8 +62,6 @@ This document is the active roadmap for the project. These phase numbers are the
 | refdesc DistilBERT frozen | `reference_description` | standardize | 12 | 0.095719 | 0.460551 | yes |
 | code DistilBERT frozen | `code` | standardize | 20 | 0.238927 | 0.422512 | yes |
 
-**Decision:** The current AR baseline is sufficient for proceeding to the first AV implementation.
-
 **Status:** Complete enough for first NLA implementation.
 
 ## Phase 7 — Implement AV
@@ -80,19 +70,11 @@ This document is the active roadmap for the project. These phase numbers are the
 |---|---|---|---:|---:|---|
 | supervised AV baseline | `reference_description` | `distilgpt2` | 5 | 3.098751 | Complete |
 
-**Report:** `docs/phase_results/phase_07_av_baseline.md`
-
 **Status:** Complete enough for first NLA implementation.
 
 ## Phase 8 — Connect the full NLA loop
 
-**Goal:** Run:
-
-```text
-activation -> AV generated explanation -> AR -> reconstructed activation -> FVE
-```
-
-### Phase 8a — AV-to-code-AR loop
+### Phase 8a — AV-to-code-AR loop on validation
 
 | Method | FVE | MSE |
 |---|---:|---:|
@@ -103,15 +85,23 @@ activation -> AV generated explanation -> AR -> reconstructed activation -> FVE
 
 **Report:** `docs/phase_results/phase_08_full_nla_loop.md`
 
-**Interpretation:** The loop runs end-to-end but does not beat the mean baseline. The likely issue is text-distribution mismatch: the AR checkpoint used here was trained on code text, while the AV produces natural-language explanations.
-
-**Next diagnostic:** Run the same loop using the reference-description AR checkpoint.
-
-**Status:** In progress.
+**Status:** Complete for validation baseline.
 
 ## Phase 9 — Controlled evaluations
 
-**Status:** Not started.
+### Phase 9a — Test activation extraction
+
+| Split | Examples | Shape | Truncated | Status |
+|---|---:|---|---:|---|
+| `test_indomain` | 500 | `(500, 1536)` | 26 | Complete |
+| `test_surface_shift` | 500 | `(500, 1536)` | 42 | Complete |
+| `test_language_shift` | 361 | `(361, 1536)` | 0 | Complete |
+
+**Report:** `docs/phase_results/phase_09a_test_activation_extraction.md`
+
+### Phase 9b — Full-loop evaluation on test artifacts
+
+**Status:** Next step.
 
 ## Phase 10 — Final report
 
