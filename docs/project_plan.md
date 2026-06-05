@@ -4,9 +4,9 @@ This document is the active roadmap for the project. These phase numbers are the
 
 ## Current Phase
 
-**Current phase:** Phase 7 — Implement AV.
+**Current phase:** Phase 8 — Connect the full NLA loop.
 
-**Immediate next step:** implement the first Activation Verbalizer that maps extracted activations to short natural-language explanations.
+**Immediate next step:** evaluate the path `activation -> AV generated explanation -> AR -> reconstructed activation -> FVE`.
 
 ## Phase 1 — Define research question and scope
 
@@ -102,21 +102,31 @@ This document is the active roadmap for the project. These phase numbers are the
 
 **Goal:** Implement the first Activation Verbalizer that maps activation vectors to natural-language explanations.
 
-**First implementation target:** supervised AV training from saved activations to available text targets.
+| Setup | Target field | LM | Epochs | Best validation loss | Status |
+|---|---|---|---:|---:|---|
+| supervised AV baseline | `reference_description` | `distilgpt2` | 5 | 3.098751 | Complete |
 
-**Default text target:** `reference_description`.
+**Report:** `docs/phase_results/phase_07_av_baseline.md`
 
-**Status:** Current phase.
+**Decision:** AV is good enough for the first full NLA loop. Do not repeat AV training before testing the loop.
+
+**Status:** Complete enough for first NLA implementation.
 
 ## Phase 8 — Connect the full NLA loop
 
 **Goal:** Run:
 
 ```text
-activation -> AV -> explanation -> AR -> reconstructed activation -> FVE
+activation -> AV generated explanation -> AR -> reconstructed activation -> FVE
 ```
 
-**Status:** Not started.
+**Inputs:**
+
+- AV checkpoint: `outputs/checkpoints/av/train5000_val500_qwen25_coder_15b_l19_ctx512_refdesc_distilgpt2`
+- AR checkpoint: `outputs/checkpoints/ar/train5000_val500_qwen25_coder_15b_l19_ctx512_code_distilbert_standardize`
+- Validation activations: `outputs/activations/validation_qwen25_coder_15b_l19_ctx512`
+
+**Status:** Current phase.
 
 ## Phase 9 — Controlled evaluations
 
