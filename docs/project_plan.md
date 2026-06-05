@@ -1,131 +1,118 @@
 # Project Plan
 
-This document is the living roadmap for the project. Each phase should be updated with decisions, implementation notes, results, and unresolved questions.
+This document is the active roadmap for the project. These phase numbers are the phase numbers used from now on.
 
-## Phase 1 — Understand the task and define the research question
+## Current Phase
 
-**Goal:** Translate the recruitment task into a focused, testable research problem.
+**Current phase:** Phase 6c — Train AR on larger data.
 
-**Current research question:**
+**Immediate next step:** train AR using the scaled train and validation activation artifacts.
 
-> Can a simplified natural language autoencoder recover meaningful information from residual-stream activations of a small code language model, and do the resulting explanations remain stable under surface-level and programming-language shifts?
+## Phase 1 — Define research question and scope
+
+**Goal:** Define the project as a compact AI4Code adaptation of Natural Language Autoencoders.
 
 **Status:** Complete.
 
-## Phase 2 — Lock the experimental scope
+## Phase 2 — Build environment and verify model access
 
-**Goal:** Select the target model, activation location, task domain, datasets, evaluation criteria, and compute budget.
+**Goal:** Validate CUDA, model loading, hidden-state extraction, and `inputs_embeds` compatibility.
 
-**Initial decisions:**
+**Status:** Complete.
 
-- Target model: `Qwen/Qwen2.5-Coder-1.5B-Instruct`
-- Smoke-test model: `Qwen/Qwen2.5-Coder-0.5B-Instruct`
-- Primary task: function-level code understanding
-- Training domain: Python functions
-- Controlled evaluation: in-domain Python, identifier renaming, and multilingual code variants
-- Activation type: residual-stream hidden state
-- Token position: final non-padding token of the prompt
-- Initial target layer: approximately two-thirds through the model
-- Primary metric: Fraction of Variance Explained (FVE)
+## Phase 3 — Prepare datasets
 
-**To complete:**
+**Goal:** Convert raw datasets into project-standard JSONL files.
 
-- Confirm exact model revision and license
-- Confirm exact layer index after feasibility probing
-- Confirm data source and filtering rules
-- Confirm expected training sample counts
+| File | Rows |
+|---|---:|
+| `pilot_100.jsonl` | 100 |
+| `train.jsonl` | 5000 |
+| `validation.jsonl` | 500 |
+| `test_indomain.jsonl` | 500 |
+| `test_surface_shift.jsonl` | 500 |
+| `test_language_shift.jsonl` | 361 |
 
-## Phase 3 — Build the reproducible environment
+**Status:** Complete.
 
-**Goal:** Validate CUDA, dependency versions, model loading, hidden-state extraction, and local storage conventions.
+## Phase 4 — Extract and validate pilot activations
 
-**Deliverables:**
+**Goal:** Extract pilot activations and select a context length.
 
-- Environment setup instructions
-- CUDA feasibility probe
-- Model download instructions
-- Local directory conventions
+**Decision:** Use `max_length=512` for main-model extraction.
 
-## Phase 4 — Prepare the dataset
+**Status:** Complete.
 
-**Goal:** Create reproducible train, validation, and test splits for code-semantic activation extraction.
+## Phase 5 — Metrics, baselines, and AR pilot
 
-**Deliverables:**
+### Phase 5a — Pilot metrics and baselines
 
-- Dataset preparation script
-- Filtering and deduplication rules
-- Prompt construction logic
-- Dataset cards and statistics
+**Status:** Complete.
 
-## Phase 5 — Extract and verify activations
+### Phase 5b — AR pilot and diagnostics
 
-**Goal:** Extract target-model activations and verify that they are correct, stable, and informative.
+| Setup | Text field | Target transform | Validation FVE | Beats train-mean baseline? |
+|---|---|---|---:|---|
+| refdesc raw | `reference_description` | raw | -5.110613 | no |
+| refdesc center | `reference_description` | center | -0.272226 | no |
+| refdesc standardize | `reference_description` | standardize | 0.056828 | yes |
+| code center | `code` | center | -0.032409 | yes |
 
-**Verification checklist:**
+**Decision:** Use target standardization for AR training.
 
-- Correct layer and token position
-- Stable tensor shape
-- No padding-token contamination
-- Deterministic extraction under a fixed seed
-- Non-trivial variation across examples
-- Reasonable activation norms and distribution
+**Status:** Complete for pilot.
 
-## Phase 6 — Implement baselines and metrics
+## Phase 6 — Scale activations and train AR on larger data
 
-**Goal:** Establish reference points before training the full NLA.
+### Phase 6a — Scaled activation extraction
 
-**Baselines:**
+| Artifact | Examples | Shape | Truncated | Status |
+|---|---:|---|---:|---|
+| `train_qwen25_coder_15b_l19_ctx512` | 5000 | `(5000, 1536)` | 368 | Complete |
+| `validation_qwen25_coder_15b_l19_ctx512` | 500 | `(500, 1536)` | 51 | Complete |
 
-- Mean activation prediction
-- Random activation prediction
-- Shuffled explanation reconstruction
-- Direct numerical reconstruction baseline
+**Report:** `docs/phase_results/phase_06_scaled_activation_extraction.md`
 
-**Metric:**
+### Phase 6b — Scaled baselines
 
-- Fraction of Variance Explained (FVE)
+| Run | Baseline | FVE | MSE |
+|---|---|---:|---:|
+| train | mean | 0.000000 | 0.176965 |
+| train | zero | -8.362388 | 1.656818 |
+| train | shuffled | -1.003030 | 0.354467 |
+| validation | mean | 0.000000 | 0.234559 |
+| validation | zero | -6.041395 | 1.651625 |
+| validation | shuffled | -1.052512 | 0.481436 |
+| validation using train reference | train mean | -0.005988 | 0.235964 |
 
-## Phase 7 — Implement and train the Activation Reconstructor (AR)
+**Report:** `docs/phase_results/phase_06b_scaled_baselines.md`
 
-**Goal:** Train a text-to-activation model and validate that the reconstruction pipeline works independently.
+**Status:** Complete.
 
-## Phase 8 — Implement and train the Activation Verbalizer (AV)
+### Phase 6c — AR training on larger data
 
-**Goal:** Train an activation-to-text model that produces compact natural-language explanations.
+**Planned default:**
 
-## Phase 9 — Connect the NLA loop
+- text model: `distilbert-base-uncased`
+- text field: `reference_description`
+- fallback fields: `prompt,code`
+- target transform: `standardize`
+- text encoder: frozen
 
-**Goal:** Run the complete vector-to-text-to-vector pipeline and measure reconstruction quality.
+**Status:** Next step.
 
-## Phase 10 — Run controlled experiments
+## Phase 7 — Implement AV
 
-**Planned comparisons:**
+**Status:** Not started.
 
-- In-domain Python code
-- Identifier-renamed Python code
-- Formatting and comment changes
-- Same-semantics code across Python, C++, and Java
-- Layer and explanation-length ablations
+## Phase 8 — Connect the full NLA loop
 
-## Phase 11 — Analyze results
+**Status:** Not started.
 
-**Goal:** Combine quantitative reconstruction results with qualitative explanation analysis.
+## Phase 9 — Controlled evaluations
 
-**Questions:**
+**Status:** Not started.
 
-- Does high FVE correspond to meaningful explanations?
-- Does the NLA capture code semantics or superficial syntax?
-- Which examples fail, and why?
-- How does performance change under distribution shift?
+## Phase 10 — Final report
 
-## Phase 12 — Prepare the final report
-
-**Goal:** Produce a concise, honest, reproducible README and supporting figures.
-
-**Final deliverables:**
-
-- Reproducible code
-- Experiment registry
-- Quantitative tables and plots
-- Qualitative examples and failure modes
-- Final README within the recruitment-task word limit
+**Status:** Not started.
