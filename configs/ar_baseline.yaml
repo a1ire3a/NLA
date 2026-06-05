@@ -1,0 +1,24 @@
+phase: 5
+name: ar_baseline_refdesc_distilbert_frozen
+
+activation_dir: outputs/activations/pilot_100_qwen25_coder_15b_l19_ctx512
+output_dir: outputs/checkpoints/ar/pilot_100_qwen25_coder_15b_l19_ctx512_refdesc_distilbert_frozen
+
+text_model_name_or_path: distilbert-base-uncased
+text_field: reference_description
+fallback_text_fields: prompt,code
+pooling: mean
+freeze_text_model: true
+projection_hidden_dim: null
+dropout: 0.0
+
+training:
+  epochs: 20
+  batch_size: 16
+  learning_rate: 1.0e-3
+  weight_decay: 0.0
+  validation_fraction: 0.2
+  seed: 42
+  max_length: 256
+  device: cuda
+  dtype: float32
