@@ -4,128 +4,19 @@ This guide describes the initial environment setup for the NLA-for-code-semantic
 
 The preferred environment is a CUDA machine with an NVIDIA RTX 3090 Ti, 24 GB VRAM, and 64 GB system RAM.
 
-## 1. Clone the Repository
+## Quick setup summary
+
+The project uses **Conda** for environment management so that the Python version is explicit and reproducible.
+
+Recommended Python version: **3.11**.
 
 ```bash
-git clone https://github.com/a1ire3a/NLA.git
-cd NLA
-```
-
-## 2. Create a Python Environment
-
-Recommended Python version: 3.10 or 3.11.
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
+conda create -n nla-code python=3.11 -y
+conda activate nla-code
 python -m pip install --upgrade pip setuptools wheel
 ```
 
-## 3. Install PyTorch with CUDA
-
-Install the CUDA-enabled PyTorch build that matches the local driver and CUDA runtime.
-
-Example for CUDA 12.4 builds:
-
-```bash
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-```
-
-If CUDA 12.1 is required instead:
-
-```bash
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-```
-
-Verify CUDA availability:
-
-```bash
-python - <<'PY'
-import torch
-print('torch:', torch.__version__)
-print('cuda available:', torch.cuda.is_available())
-if torch.cuda.is_available():
-    print('device:', torch.cuda.get_device_name(0))
-    print('capability:', torch.cuda.get_device_capability(0))
-PY
-```
-
-## 4. Install Project Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-## 5. Configure Hugging Face Cache
-
-Large model files should not be stored inside the Git repository.
-
-Recommended local structure:
-
-```bash
-mkdir -p ~/hf_cache
-export HF_HOME=~/hf_cache
-export HF_HUB_CACHE=~/hf_cache/hub
-```
-
-For persistent configuration, add the export commands to `~/.bashrc` or `~/.zshrc`.
-
-## 6. Optional: Login to Hugging Face
-
-Most selected models are publicly accessible, but logging in avoids rate limits and supports private or gated datasets if needed.
-
-```bash
-huggingface-cli login
-```
-
-## 7. Download the Smoke-Test Model
-
-```bash
-huggingface-cli download Qwen/Qwen2.5-Coder-0.5B-Instruct \
-  --local-dir ~/hf_cache/models/Qwen2.5-Coder-0.5B-Instruct \
-  --local-dir-use-symlinks False
-```
-
-## 8. Download the Main Model
-
-```bash
-huggingface-cli download Qwen/Qwen2.5-Coder-1.5B-Instruct \
-  --local-dir ~/hf_cache/models/Qwen2.5-Coder-1.5B-Instruct \
-  --local-dir-use-symlinks False
-```
-
-## 9. Run the Feasibility Probe
-
-After implementation, the first script to run will be:
-
-```bash
-python scripts/feasibility_probe.py \
-  --model_name_or_path Qwen/Qwen2.5-Coder-0.5B-Instruct \
-  --layer_index 16 \
-  --max_length 128
-```
-
-Expected checks:
-
-- CUDA is available.
-- Model and tokenizer load correctly.
-- A prompt can be tokenized.
-- Hidden states can be extracted.
-- The selected layer has the expected shape.
-- Final non-padding token activation can be selected.
-
-Then repeat with the main model:
-
-```bash
-python scripts/feasibility_probe.py \
-  --model_name_or_path Qwen/Qwen2.5-Coder-1.5B-Instruct \
-  --layer_index 19 \
-  --max_length 128
-```
-
-## 10. Notes on Ollama
-
-Ollama can be useful for informal prompt inspection, but it should not be used for the research pipeline because the project requires direct access to hidden states, `inputs_embeds`, fine-tuning adapters, and activation tensors. The main implementation should use Hugging Face Transformers and PyTorch.
+Then install CUDA-enabled PyTorch and the project requirements.
 
 ---
 
@@ -138,7 +29,8 @@ The commands assume:
 - Ubuntu 22.04 or 24.04.
 - NVIDIA driver is already installed.
 - `nvidia-smi` works.
-- CUDA-enabled PyTorch will be installed through pip.
+- Miniconda or Anaconda is installed.
+- CUDA-enabled PyTorch will be installed through pip inside a Conda environment.
 - Large artifacts are stored outside Git whenever possible.
 
 ### A. Verify the GPU machine
@@ -147,11 +39,42 @@ The commands assume:
 nvidia-smi
 nvcc --version || true
 python3 --version
+conda --version
 ```
 
 If `nvidia-smi` does not show the RTX 3090 Ti, fix the NVIDIA driver before continuing.
 
-### B. Install system packages
+If `conda --version` fails, install Miniconda first.
+
+### B. Install Miniconda, if needed
+
+Skip this section if Conda is already installed.
+
+```bash
+cd ~/Downloads
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+```
+
+Close and reopen the terminal, or run:
+
+```bash
+source ~/.bashrc
+```
+
+Verify:
+
+```bash
+conda --version
+```
+
+Recommended Conda settings:
+
+```bash
+conda config --set auto_activate_base false
+```
+
+### C. Install system packages
 
 ```bash
 sudo apt update
@@ -161,16 +84,13 @@ sudo apt install -y \
   curl \
   wget \
   build-essential \
-  python3 \
-  python3-venv \
-  python3-dev \
   unzip \
   htop
 
 git lfs install
 ```
 
-### C. Clone the project
+### D. Clone the project
 
 ```bash
 mkdir -p ~/research
@@ -180,17 +100,33 @@ git clone https://github.com/a1ire3a/NLA.git
 cd NLA
 ```
 
-### D. Create and activate the Python environment
+### E. Create and activate the Conda environment
+
+Use Python 3.11 as the default project version:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+conda create -n nla-code python=3.11 -y
+conda activate nla-code
 python -m pip install --upgrade pip setuptools wheel
 ```
 
-### E. Install CUDA-enabled PyTorch
+If you need Python 3.10 instead, create a separate environment:
 
-Use the CUDA wheel that matches your installed driver. For most recent NVIDIA drivers, start with CUDA 12.4 wheels:
+```bash
+conda create -n nla-code-py310 python=3.10 -y
+conda activate nla-code-py310
+python -m pip install --upgrade pip setuptools wheel
+```
+
+For the rest of this guide, assume the active environment is:
+
+```bash
+conda activate nla-code
+```
+
+### F. Install CUDA-enabled PyTorch
+
+Use the CUDA wheel that matches your installed NVIDIA driver. For most recent NVIDIA drivers, start with CUDA 12.4 wheels:
 
 ```bash
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
@@ -216,19 +152,26 @@ if torch.cuda.is_available():
 PY
 ```
 
-### F. Install project dependencies
+### G. Install project dependencies
+
+Make sure you are inside the repository and the Conda environment is active:
 
 ```bash
+cd ~/research/NLA
+conda activate nla-code
 pip install -r requirements.txt
 ```
 
 If `flash-attn` is later needed, install it separately only after the basic pipeline works. Do not add it to the first setup path.
 
-### G. Configure Hugging Face cache and local artifact folders
+### H. Configure Hugging Face cache and local artifact folders
+
+Large model files and datasets should not be stored inside the Git repository.
 
 ```bash
 mkdir -p ~/hf_cache/hub
 mkdir -p ~/hf_cache/models
+mkdir -p ~/hf_cache/datasets
 mkdir -p ~/research/NLA/data/raw
 mkdir -p ~/research/NLA/data/interim
 mkdir -p ~/research/NLA/data/processed
@@ -256,9 +199,10 @@ Reload if needed:
 
 ```bash
 source ~/.bashrc
+conda activate nla-code
 ```
 
-### H. Login to Hugging Face
+### I. Login to Hugging Face
 
 ```bash
 huggingface-cli login
@@ -266,7 +210,7 @@ huggingface-cli login
 
 This is optional for public models and datasets, but recommended to avoid rate limits.
 
-### I. Download the selected Code LLMs
+### J. Download the selected Code LLMs
 
 Official model pages:
 
@@ -309,7 +253,7 @@ print('hidden size:', model.config.hidden_size)
 PY
 ```
 
-### J. Download the primary training-style dataset: CodeSearchNet / CodeXGLUE
+### K. Download the primary training-style dataset: CodeSearchNet / CodeXGLUE
 
 Official references:
 
@@ -317,7 +261,7 @@ Official references:
 - CodeXGLUE paper and benchmark page are linked from the repository.
 - CodeSearchNet is the source dataset used by CodeXGLUE for code summarization and code search.
 
-First, keep a local copy of the CodeXGLUE repository for reference scripts and documentation:
+Keep a local copy of the CodeXGLUE repository for reference scripts and documentation:
 
 ```bash
 mkdir -p ~/research/external
@@ -330,6 +274,7 @@ Return to the project:
 
 ```bash
 cd ~/research/NLA
+conda activate nla-code
 ```
 
 Primary dataset loading path through Hugging Face `datasets`:
@@ -356,7 +301,7 @@ PY
 
 If this fails because of dataset-script restrictions or upstream changes, use the CodeXGLUE clone as the fallback reference and implement the downloader in `scripts/prepare_dataset.py` based on the current CodeXGLUE directory layout.
 
-### K. Download the controlled multilingual dataset: HumanEval-X
+### L. Download the controlled multilingual dataset: HumanEval-X
 
 Official references:
 
@@ -377,6 +322,7 @@ Return to the project:
 
 ```bash
 cd ~/research/NLA
+conda activate nla-code
 ```
 
 Download HumanEval-X through Hugging Face `datasets` for the languages used in this project:
@@ -427,7 +373,7 @@ huggingface-cli download zai-org/humaneval-x \
   --local-dir-use-symlinks False
 ```
 
-### L. Optional small Python-only sanity dataset: OpenAI HumanEval
+### M. Optional small Python-only sanity dataset: OpenAI HumanEval
 
 This is not the main dataset, but it is useful as a tiny sanity check because it has only 164 test rows.
 
@@ -446,7 +392,7 @@ print('Saved to data/raw/openai_humaneval')
 PY
 ```
 
-### M. Verify that local datasets are readable
+### N. Verify that local datasets are readable
 
 ```bash
 python - <<'PY'
@@ -471,14 +417,16 @@ for path in paths:
 PY
 ```
 
-### N. Run the initial repository health checks
+### O. Run the initial repository health checks
 
 ```bash
+cd ~/research/NLA
+conda activate nla-code
 pytest -q
 python -m compileall src scripts
 ```
 
-### O. Expected local directory state
+### P. Expected local directory state
 
 After manual installation, the important local paths should look like this:
 
@@ -510,7 +458,7 @@ After manual installation, the important local paths should look like this:
 └── CodeGeeX/
 ```
 
-### P. What not to commit
+### Q. What not to commit
 
 Do not commit:
 
