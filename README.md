@@ -6,6 +6,37 @@ The central question is:
 
 > Can a natural-language round trip recover meaningful information from internal activations of a small code model, and do the explanations remain useful under code transformations?
 
+## Where to look first
+
+The README is the short final report. The detailed execution trail is split as follows:
+
+- [docs/project_plan.md](docs/project_plan.md) — current roadmap and completed phases.
+- [docs/research_log.md](docs/research_log.md) — central narrative log of decisions, challenges, and results.
+- [docs/phase_results/](docs/phase_results/) — phase-by-phase reports with quantitative results.
+- [experiments/](experiments/) — lightweight CSV experiment registries and metric summaries.
+- [docs/manual_installation.md](docs/manual_installation.md) — setup and reproduction instructions.
+
+Large raw artifacts are intentionally not committed; the repository keeps reproducible code and compact documentation instead.
+
+## Code, models, and data links
+
+Core implementation:
+
+- [src/nla_code_interp/qwen_models.py](src/nla_code_interp/qwen_models.py) — Qwen AV/AR modules and checkpoint loaders.
+- [src/nla_code_interp/metrics.py](src/nla_code_interp/metrics.py) — FVE, MSE, cosine, and baseline metrics.
+- [scripts/extract_activations.py](scripts/extract_activations.py) — activation extraction from the target model.
+- [scripts/train_qwen_joint_nla.py](scripts/train_qwen_joint_nla.py) — aligned AV/AR training.
+- [scripts/train_qwen_av_reward_rl.py](scripts/train_qwen_av_reward_rl.py) — reward-driven AV optimization.
+- [scripts/run_qwen_nla_loop.py](scripts/run_qwen_nla_loop.py) — final NLA loop evaluation.
+
+External model and data sources:
+
+- Main model: [Qwen/Qwen2.5-Coder-1.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct).
+- Smoke-test model: [Qwen/Qwen2.5-Coder-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B-Instruct).
+- Training-data source family: [CodeSearchNet](https://github.com/github/CodeSearchNet).
+- Controlled multilingual source family: [HumanEval-X / CodeGeeX](https://github.com/THUDM/CodeGeeX).
+- Reference method: [Natural Language Autoencoders](https://transformer-circuits.pub/2026/nla/index.html) and the [official implementation](https://github.com/kitft/natural_language_autoencoders).
+
 ## Summary of the approach
 
 I used `Qwen/Qwen2.5-Coder-1.5B-Instruct` as the main target model and extracted residual-stream hidden states from layer 19 at the final non-padding token. The task domain is function-level code understanding.
@@ -46,7 +77,7 @@ The datasets were chosen to test both ordinary reconstruction and generalization
 - Surface-shift test: identifier-renaming transformations.
 - Language-shift test: cross-language Python/C++/Java-style examples.
 
-Large artifacts such as raw data, extracted activations, and checkpoints are not committed. Their paths and generation commands are documented in `docs/`.
+Large artifacts such as raw data, extracted activations, and checkpoints are not committed. Their paths and generation commands are documented in [docs/manual_installation.md](docs/manual_installation.md).
 
 ## Main quantitative results
 
@@ -103,18 +134,11 @@ This is an important limitation: the system can learn activation-preserving text
 
 Manual setup is documented in:
 
-- `docs/manual_installation.md`
-- `docs/research_log.md`
-- `docs/phase_results/`
+- [docs/manual_installation.md](docs/manual_installation.md)
+- [docs/research_log.md](docs/research_log.md)
+- [docs/phase_results/](docs/phase_results/)
 
-Core scripts:
-
-- `scripts/extract_activations.py`
-- `scripts/train_qwen_ar.py`
-- `scripts/train_qwen_av.py`
-- `scripts/train_qwen_joint_nla.py`
-- `scripts/train_qwen_av_reward_rl.py`
-- `scripts/run_qwen_nla_loop.py`
+Core scripts are linked in [Code, models, and data links](#code-models-and-data-links).
 
 Representative final commands:
 
@@ -143,7 +167,7 @@ python scripts/train_qwen_av_reward_rl.py \
   --dtype bfloat16
 ```
 
-The exact experiment chronology is in `experiments/` and `docs/research_log.md`.
+The exact experiment chronology is in [experiments/](experiments/) and [docs/research_log.md](docs/research_log.md).
 
 ## What remains uncertain
 
