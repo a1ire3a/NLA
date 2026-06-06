@@ -1,0 +1,54 @@
+{
+  "schema_version": "phase4_baseline_eval_v1",
+  "generated_at": "2026-06-05T14:57:46.692323+00:00",
+  "cli_args": {
+    "activation_dir": "outputs/activations/pilot_100_qwen25_coder_05b_l16",
+    "reference_activation_dir": null,
+    "output_dir": "outputs/reports/baselines",
+    "run_name": "pilot_100_qwen25_coder_05b_l16",
+    "seed": 42,
+    "overwrite": false,
+    "verbose": false
+  },
+  "activation_dir": "outputs/activations/pilot_100_qwen25_coder_05b_l16",
+  "reference_activation_dir": null,
+  "run_name": "pilot_100_qwen25_coder_05b_l16",
+  "num_examples": 100,
+  "activation_dim": 896,
+  "activation_artifact_manifest_summary": {
+    "schema_version": "phase3_activation_v1",
+    "model_name_or_path": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+    "layer_index": 16,
+    "token_position": "final_non_padding",
+    "num_examples": 100,
+    "activation_dim": 896,
+    "activation_shape": [
+      100,
+      896
+    ],
+    "activation_dtype": "float32",
+    "truncation_count": 66,
+    "activation_summary": {
+      "mean": 0.021549364551901817,
+      "std": 0.8682903051376343,
+      "min": -12.4375,
+      "max": 14.4375,
+      "average_l2_norm": 25.973281860351562
+    }
+  },
+  "reference_artifact_manifest_summary": null,
+  "baseline_names": [
+    "mean",
+    "zero",
+    "shuffled"
+  ],
+  "output_files": {
+    "csv": "outputs/reports/baselines/pilot_100_qwen25_coder_05b_l16_baseline_metrics.csv",
+    "json": "outputs/reports/baselines/pilot_100_qwen25_coder_05b_l16_baseline_metrics.json",
+    "per_example": "outputs/reports/baselines/pilot_100_qwen25_coder_05b_l16_per_example_errors.jsonl",
+    "manifest": "outputs/reports/baselines/pilot_100_qwen25_coder_05b_l16_evaluation_manifest.json"
+  },
+  "notes": [
+    "When the mean baseline is computed from the same target tensor, FVE should be approximately 0 by construction."
+  ]
+}

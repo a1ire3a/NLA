@@ -1,0 +1,81 @@
+{
+  "schema_version": "phase5_ar_training_v1",
+  "generated_at": "2026-06-05T15:26:38.125179+00:00",
+  "cli_args": {
+    "activation_dir": "outputs/activations/pilot_100_qwen25_coder_15b_l19_ctx512",
+    "output_dir": "outputs/checkpoints/ar/pilot_100_qwen25_coder_15b_l19_ctx512_refdesc_distilbert_frozen",
+    "text_model_name_or_path": "distilbert-base-uncased",
+    "text_field": "reference_description",
+    "fallback_text_fields": "prompt,code",
+    "pooling": "mean",
+    "freeze_text_model": true,
+    "projection_hidden_dim": null,
+    "dropout": 0.0,
+    "epochs": 20,
+    "batch_size": 16,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "validation_fraction": 0.2,
+    "seed": 42,
+    "max_length": 256,
+    "device": "cuda",
+    "dtype": "float32",
+    "save_every_epoch": false,
+    "baseline_metrics_json": null,
+    "overwrite": false,
+    "verbose": false
+  },
+  "activation_dir": "outputs/activations/pilot_100_qwen25_coder_15b_l19_ctx512",
+  "output_dir": "outputs/checkpoints/ar/pilot_100_qwen25_coder_15b_l19_ctx512_refdesc_distilbert_frozen",
+  "activation_artifact_manifest_summary": {
+    "schema_version": "phase3_activation_v1",
+    "input_path": "data/processed/pilot_100.jsonl",
+    "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "layer_index": 19,
+    "token_position": "final_non_padding",
+    "num_examples": 100,
+    "activation_dim": 1536,
+    "activation_shape": [
+      100,
+      1536
+    ],
+    "activation_dtype": "float32",
+    "truncation_count": 1
+  },
+  "text_model_name_or_path": "distilbert-base-uncased",
+  "text_field": "reference_description",
+  "fallback_text_fields": [
+    "prompt",
+    "code"
+  ],
+  "pooling": "mean",
+  "projection_hidden_dim": null,
+  "dropout": 0.0,
+  "freeze_text_model": true,
+  "num_examples": 100,
+  "activation_dim": 1536,
+  "train_count": 80,
+  "validation_count": 20,
+  "split_strategy": "deterministic_random_split",
+  "best_epoch": 20,
+  "best_validation_metrics": {
+    "fve": -5.1106133460998535,
+    "mse": 0.08322915434837341,
+    "rmse": 0.28849463486930466,
+    "mean_l2_error": 11.2097806930542,
+    "cosine_mean": 0.9796514511108398,
+    "cosine_std": 0.0052508218213915825,
+    "cosine_min": 0.9662211537361145,
+    "cosine_max": 0.9878422021865845
+  },
+  "baseline_metrics_json": null,
+  "baseline_metrics": null,
+  "output_files": {
+    "model": "model.pt",
+    "training_metrics": "training_metrics.csv",
+    "validation_predictions": "validation_predictions.pt",
+    "validation_targets": "validation_targets.pt",
+    "validation_metadata": "validation_metadata.jsonl",
+    "manifest": "train_ar_manifest.json"
+  }
+}

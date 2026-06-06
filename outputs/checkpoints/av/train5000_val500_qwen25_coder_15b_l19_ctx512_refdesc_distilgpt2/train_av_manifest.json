@@ -1,0 +1,89 @@
+{
+  "schema_version": "phase7_av_training_v1",
+  "generated_at": "2026-06-05T18:09:55.554850+00:00",
+  "cli_args": {
+    "activation_dir": "outputs/activations/train_qwen25_coder_15b_l19_ctx512",
+    "validation_activation_dir": "outputs/activations/validation_qwen25_coder_15b_l19_ctx512",
+    "output_dir": "outputs/checkpoints/av/train5000_val500_qwen25_coder_15b_l19_ctx512_refdesc_distilgpt2",
+    "text_model_name_or_path": "distilgpt2",
+    "target_text_field": "reference_description",
+    "fallback_text_fields": "code,prompt",
+    "epochs": 5,
+    "batch_size": 8,
+    "learning_rate": 5e-05,
+    "max_target_length": 64,
+    "freeze_lm": false,
+    "seed": 42,
+    "overwrite": false
+  },
+  "activation_dir": "outputs/activations/train_qwen25_coder_15b_l19_ctx512",
+  "validation_activation_dir": "outputs/activations/validation_qwen25_coder_15b_l19_ctx512",
+  "output_dir": "outputs/checkpoints/av/train5000_val500_qwen25_coder_15b_l19_ctx512_refdesc_distilgpt2",
+  "text_model_name_or_path": "distilgpt2",
+  "target_text_field": "reference_description",
+  "fallback_text_fields": [
+    "code",
+    "prompt"
+  ],
+  "freeze_lm": false,
+  "max_target_length": 64,
+  "train_count": 5000,
+  "validation_count": 500,
+  "activation_dim": 1536,
+  "best_epoch": 3,
+  "best_validation_loss": 3.0987505264282227,
+  "train_target_field_counts": {
+    "reference_description": 5000
+  },
+  "validation_target_field_counts": {
+    "reference_description": 500
+  },
+  "train_text_length_summary": {
+    "count": 5000,
+    "mean_chars": 254.1486,
+    "min_chars": 4,
+    "max_chars": 3111
+  },
+  "validation_text_length_summary": {
+    "count": 500,
+    "mean_chars": 294.772,
+    "min_chars": 10,
+    "max_chars": 2831
+  },
+  "train_activation_artifact_manifest_summary": {
+    "schema_version": "phase3_activation_v1",
+    "input_path": "data/processed/train.jsonl",
+    "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "layer_index": 19,
+    "token_position": "final_non_padding",
+    "num_examples": 5000,
+    "activation_dim": 1536,
+    "activation_shape": [
+      5000,
+      1536
+    ],
+    "activation_dtype": "float32",
+    "truncation_count": 368
+  },
+  "validation_activation_artifact_manifest_summary": {
+    "schema_version": "phase3_activation_v1",
+    "input_path": "data/processed/validation.jsonl",
+    "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "layer_index": 19,
+    "token_position": "final_non_padding",
+    "num_examples": 500,
+    "activation_dim": 1536,
+    "activation_shape": [
+      500,
+      1536
+    ],
+    "activation_dtype": "float32",
+    "truncation_count": 51
+  },
+  "output_files": {
+    "model": "model.pt",
+    "training_metrics": "training_metrics.csv",
+    "validation_generations": "validation_generations.jsonl",
+    "manifest": "train_av_manifest.json"
+  }
+}

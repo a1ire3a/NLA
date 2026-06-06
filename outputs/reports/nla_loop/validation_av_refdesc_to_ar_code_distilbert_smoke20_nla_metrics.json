@@ -1,0 +1,58 @@
+[
+  {
+    "run_name": "validation_av_refdesc_to_ar_code_distilbert_smoke20",
+    "method": "nla",
+    "num_examples": 20,
+    "activation_dim": 1536,
+    "fve": -0.344757080078125,
+    "mse": 0.2921510338783264,
+    "rmse": 0.540509975743581,
+    "mean_l2_error": 17.80919647216797,
+    "cosine_mean": 0.9007282257080078,
+    "cosine_std": 0.19153042137622833,
+    "cosine_min": 0.24727779626846313,
+    "cosine_max": 0.974852442741394
+  },
+  {
+    "run_name": "validation_av_refdesc_to_ar_code_distilbert_smoke20",
+    "method": "mean",
+    "num_examples": 20,
+    "activation_dim": 1536,
+    "fve": 0.0,
+    "mse": 0.2172518769900004,
+    "rmse": 0.4661028609545326,
+    "mean_l2_error": 11.826083183288574,
+    "cosine_mean": 0.9244658350944519,
+    "cosine_std": 0.204614520072937,
+    "cosine_min": 0.2589758634567261,
+    "cosine_max": 0.994720458984375
+  },
+  {
+    "run_name": "validation_av_refdesc_to_ar_code_distilbert_smoke20",
+    "method": "zero",
+    "num_examples": 20,
+    "activation_dim": 1536,
+    "fve": -6.533046722412109,
+    "mse": 1.6365687052408855,
+    "rmse": 1.279284450480379,
+    "mean_l2_error": 50.10258483886719,
+    "cosine_mean": 0.0,
+    "cosine_std": 0.0,
+    "cosine_min": 0.0,
+    "cosine_max": 0.0
+  },
+  {
+    "run_name": "validation_av_refdesc_to_ar_code_distilbert_smoke20",
+    "method": "shuffled",
+    "num_examples": 20,
+    "activation_dim": 1536,
+    "fve": -1.177025556564331,
+    "mse": 0.4729629357655843,
+    "rmse": 0.687723008024004,
+    "mean_l2_error": 16.86542510986328,
+    "cosine_mean": 0.8419507145881653,
+    "cosine_std": 0.30038419365882874,
+    "cosine_min": 0.1845831573009491,
+    "cosine_max": 0.9960646629333496
+  }
+]

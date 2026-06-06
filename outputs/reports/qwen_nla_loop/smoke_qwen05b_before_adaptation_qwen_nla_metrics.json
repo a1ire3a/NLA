@@ -1,0 +1,58 @@
+[
+  {
+    "run_name": "smoke_qwen05b_before_adaptation",
+    "method": "qwen_nla",
+    "num_examples": 32,
+    "activation_dim": 1536,
+    "fve": -0.07794034481048584,
+    "mse": 0.15755101044972739,
+    "rmse": 0.3969269585827188,
+    "mean_l2_error": 8.710097312927246,
+    "cosine_mean": 0.9472984671592712,
+    "cosine_std": 0.18197961151599884,
+    "cosine_min": 0.18491865694522858,
+    "cosine_max": 0.9970738291740417
+  },
+  {
+    "run_name": "smoke_qwen05b_before_adaptation",
+    "method": "mean",
+    "num_examples": 32,
+    "activation_dim": 1536,
+    "fve": 0.0,
+    "mse": 0.14615929126739502,
+    "rmse": 0.3823078488174092,
+    "mean_l2_error": 8.953922271728516,
+    "cosine_mean": 0.9501683115959167,
+    "cosine_std": 0.17147685587406158,
+    "cosine_min": 0.23355984687805176,
+    "cosine_max": 0.9967069029808044
+  },
+  {
+    "run_name": "smoke_qwen05b_before_adaptation",
+    "method": "zero",
+    "num_examples": 32,
+    "activation_dim": 1536,
+    "fve": -10.306170463562012,
+    "mse": 1.652501900990804,
+    "rmse": 1.285496752617759,
+    "mean_l2_error": 50.35736083984375,
+    "cosine_mean": 0.0,
+    "cosine_std": 0.0,
+    "cosine_min": 0.0,
+    "cosine_max": 0.0
+  },
+  {
+    "run_name": "smoke_qwen05b_before_adaptation",
+    "method": "shuffled",
+    "num_examples": 32,
+    "activation_dim": 1536,
+    "fve": -1.105088710784912,
+    "mse": 0.3076782822608948,
+    "rmse": 0.554687553728128,
+    "mean_l2_error": 13.248868942260742,
+    "cosine_mean": 0.8975169062614441,
+    "cosine_std": 0.24746623635292053,
+    "cosine_min": 0.19307513535022736,
+    "cosine_max": 0.9962780475616455
+  }
+]

@@ -1,0 +1,56 @@
+{
+  "schema_version": "phase3_activation_v1",
+  "generated_at": "2026-06-05T18:44:18.014841+00:00",
+  "cli_args": {
+    "input_jsonl": "data/processed/test_language_shift.jsonl",
+    "output_dir": "outputs/activations/test_language_shift_qwen25_coder_15b_l19_ctx512",
+    "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "layer_index": 19,
+    "token_position": "final_non_padding",
+    "max_length": 512,
+    "batch_size": 8,
+    "dtype": "bfloat16",
+    "device_map": "auto",
+    "trust_remote_code": false,
+    "local_files_only": false,
+    "limit": null,
+    "overwrite": false,
+    "seed": 42,
+    "save_dtype": "float32",
+    "verbose": false
+  },
+  "input_path": "data/processed/test_language_shift.jsonl",
+  "output_path": "outputs/activations/test_language_shift_qwen25_coder_15b_l19_ctx512",
+  "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+  "layer_index": 19,
+  "token_position": "final_non_padding",
+  "num_examples": 361,
+  "hidden_size": 1536,
+  "activation_dim": 1536,
+  "activation_shape": [
+    361,
+    1536
+  ],
+  "activation_dtype": "float32",
+  "tensor_file": "activations.pt",
+  "metadata_file": "metadata.jsonl",
+  "counts_by_split": {
+    "test_language_shift": 361
+  },
+  "counts_by_language": {
+    "cpp": 164,
+    "java": 164,
+    "python": 33
+  },
+  "counts_by_transformation_type": {
+    "language_shift": 361
+  },
+  "truncation_count": 0,
+  "activation_summary": {
+    "mean": 0.07369735836982727,
+    "std": 1.2961177825927734,
+    "min": -21.75,
+    "max": 18.0,
+    "average_l2_norm": 50.877803802490234
+  }
+}

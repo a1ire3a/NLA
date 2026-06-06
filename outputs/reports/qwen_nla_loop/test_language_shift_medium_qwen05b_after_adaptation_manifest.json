@@ -1,0 +1,169 @@
+{
+  "schema_version": "phase10c_qwen_nla_loop_v1",
+  "generated_at": "2026-06-05T21:12:43.218850+00:00",
+  "cli_args": {
+    "activation_dir": "outputs/activations/test_language_shift_qwen25_coder_15b_l19_ctx512",
+    "qwen_av_checkpoint_dir": "outputs/checkpoints/qwen_av/medium_refdesc_qwen05b_lora_e3_n1000",
+    "qwen_ar_checkpoint_dir": "outputs/checkpoints/qwen_nla/medium_qwen05b_generated_text_ar_adapt_e3_n1000",
+    "output_dir": "outputs/reports/qwen_nla_loop",
+    "run_name": "test_language_shift_medium_qwen05b_after_adaptation",
+    "limit": null,
+    "batch_size": 2,
+    "max_new_tokens": 128,
+    "seed": 42,
+    "overwrite": false,
+    "verbose": false
+  },
+  "activation_dir": "outputs/activations/test_language_shift_qwen25_coder_15b_l19_ctx512",
+  "qwen_av_checkpoint_dir": "outputs/checkpoints/qwen_av/medium_refdesc_qwen05b_lora_e3_n1000",
+  "qwen_ar_checkpoint_dir": "outputs/checkpoints/qwen_nla/medium_qwen05b_generated_text_ar_adapt_e3_n1000",
+  "output_dir": "outputs/reports/qwen_nla_loop",
+  "run_name": "test_language_shift_medium_qwen05b_after_adaptation",
+  "limit": null,
+  "num_examples": 361,
+  "activation_dim": 1536,
+  "max_new_tokens": 128,
+  "batch_size": 2,
+  "seed": 42,
+  "qwen_av_checkpoint_summary": {
+    "schema_version": "phase10a_qwen_av_lora_v1",
+    "epoch": 1,
+    "config": {
+      "component": "qwen_av",
+      "model_name_or_path": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "activation_dim": 1536,
+      "dtype": "bfloat16",
+      "lora": {
+        "enabled": true,
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "target_text_field": "reference_description",
+      "fallback_text_fields": "prompt,code",
+      "max_target_length": 128
+    },
+    "validation_loss": 2.8909438014030457,
+    "validation_metrics": null
+  },
+  "qwen_ar_checkpoint_summary": {
+    "schema_version": "phase10c_qwen_nla_reconstruction_v1",
+    "epoch": 3,
+    "config": {
+      "component": "qwen_ar",
+      "model_name_or_path": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "activation_dim": 1536,
+      "dtype": "bfloat16",
+      "lora": {
+        "enabled": true,
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "text_field": "reference_description",
+      "fallback_text_fields": "prompt,code",
+      "target_transform": "standardize",
+      "max_length": 256,
+      "pooling": "final",
+      "adaptation": {
+        "phase": "10c",
+        "source_text": "qwen_av_generated_text",
+        "source_qwen_ar_checkpoint_dir": "outputs/checkpoints/qwen_ar/medium_refdesc_qwen05b_lora_e3_n1000",
+        "qwen_av_checkpoint_dir": "outputs/checkpoints/qwen_av/medium_refdesc_qwen05b_lora_e3_n1000"
+      }
+    },
+    "validation_loss": null,
+    "validation_metrics": {
+      "validation_fve": 0.49406176805496216,
+      "validation_mse": 0.13174275557200113,
+      "validation_rmse": 0.3629638488499938,
+      "validation_cosine_mean": 0.944691002368927,
+      "validation_mean_baseline_fve": 0.0,
+      "validation_zero_baseline_fve": -5.345505714416504,
+      "validation_shuffled_baseline_fve": -1.1051552295684814
+    }
+  },
+  "metrics": [
+    {
+      "run_name": "test_language_shift_medium_qwen05b_after_adaptation",
+      "method": "qwen_nla",
+      "num_examples": 361,
+      "activation_dim": 1536,
+      "fve": -5.194087505340576,
+      "mse": 0.11835824449857076,
+      "rmse": 0.34403233060073113,
+      "mean_l2_error": 13.390483856201172,
+      "cosine_mean": 0.9650302529335022,
+      "cosine_std": 0.007690236903727055,
+      "cosine_min": 0.9460087418556213,
+      "cosine_max": 0.9893263578414917
+    },
+    {
+      "run_name": "test_language_shift_medium_qwen05b_after_adaptation",
+      "method": "mean",
+      "num_examples": 361,
+      "activation_dim": 1536,
+      "fve": 0.0,
+      "mse": 0.019108259429534275,
+      "rmse": 0.13823262794844882,
+      "mean_l2_error": 5.161870002746582,
+      "cosine_mean": 0.9943409562110901,
+      "cosine_std": 0.004686209373176098,
+      "cosine_min": 0.9645840525627136,
+      "cosine_max": 0.9981160163879395
+    },
+    {
+      "run_name": "test_language_shift_medium_qwen05b_after_adaptation",
+      "method": "zero",
+      "num_examples": 361,
+      "activation_dim": 1536,
+      "fve": -87.20021057128906,
+      "mse": 1.6853524843851726,
+      "rmse": 1.2982112633871163,
+      "mean_l2_error": 50.8778076171875,
+      "cosine_mean": 0.0,
+      "cosine_std": 0.0,
+      "cosine_min": 0.0,
+      "cosine_max": 0.0
+    },
+    {
+      "run_name": "test_language_shift_medium_qwen05b_after_adaptation",
+      "method": "shuffled",
+      "num_examples": 361,
+      "activation_dim": 1536,
+      "fve": -0.9452869892120361,
+      "mse": 0.037171050906181335,
+      "rmse": 0.19279795358400809,
+      "mean_l2_error": 6.907194137573242,
+      "cosine_mean": 0.9890236258506775,
+      "cosine_std": 0.008872934617102146,
+      "cosine_min": 0.9548287987709045,
+      "cosine_max": 1.0000001192092896
+    }
+  ],
+  "output_files": {
+    "metrics_csv": "outputs/reports/qwen_nla_loop/test_language_shift_medium_qwen05b_after_adaptation_qwen_nla_metrics.csv",
+    "metrics_json": "outputs/reports/qwen_nla_loop/test_language_shift_medium_qwen05b_after_adaptation_qwen_nla_metrics.json",
+    "generated": "outputs/reports/qwen_nla_loop/test_language_shift_medium_qwen05b_after_adaptation_generated_explanations.jsonl",
+    "per_example": "outputs/reports/qwen_nla_loop/test_language_shift_medium_qwen05b_after_adaptation_per_example_metrics.jsonl",
+    "manifest": "outputs/reports/qwen_nla_loop/test_language_shift_medium_qwen05b_after_adaptation_manifest.json"
+  }
+}

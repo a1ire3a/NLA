@@ -1,0 +1,58 @@
+[
+  {
+    "run_name": "test_language_shift_av_refdesc_to_ar_code_distilbert",
+    "method": "nla",
+    "num_examples": 361,
+    "activation_dim": 1536,
+    "fve": -13.04859447479248,
+    "mse": 0.26844420035680133,
+    "rmse": 0.5181160105196532,
+    "mean_l2_error": 20.246707916259766,
+    "cosine_mean": 0.9279390573501587,
+    "cosine_std": 0.01076081395149231,
+    "cosine_min": 0.9078257083892822,
+    "cosine_max": 0.9680255651473999
+  },
+  {
+    "run_name": "test_language_shift_av_refdesc_to_ar_code_distilbert",
+    "method": "mean",
+    "num_examples": 361,
+    "activation_dim": 1536,
+    "fve": 0.0,
+    "mse": 0.019108259429534275,
+    "rmse": 0.13823262794844882,
+    "mean_l2_error": 5.161870002746582,
+    "cosine_mean": 0.9943409562110901,
+    "cosine_std": 0.004686209373176098,
+    "cosine_min": 0.9645840525627136,
+    "cosine_max": 0.9981160163879395
+  },
+  {
+    "run_name": "test_language_shift_av_refdesc_to_ar_code_distilbert",
+    "method": "zero",
+    "num_examples": 361,
+    "activation_dim": 1536,
+    "fve": -87.20021057128906,
+    "mse": 1.6853524843851726,
+    "rmse": 1.2982112633871163,
+    "mean_l2_error": 50.8778076171875,
+    "cosine_mean": 0.0,
+    "cosine_std": 0.0,
+    "cosine_min": 0.0,
+    "cosine_max": 0.0
+  },
+  {
+    "run_name": "test_language_shift_av_refdesc_to_ar_code_distilbert",
+    "method": "shuffled",
+    "num_examples": 361,
+    "activation_dim": 1536,
+    "fve": -0.9452869892120361,
+    "mse": 0.037171050906181335,
+    "rmse": 0.19279795358400809,
+    "mean_l2_error": 6.907194137573242,
+    "cosine_mean": 0.9890236258506775,
+    "cosine_std": 0.008872934617102146,
+    "cosine_min": 0.9548287987709045,
+    "cosine_max": 1.0000001192092896
+  }
+]

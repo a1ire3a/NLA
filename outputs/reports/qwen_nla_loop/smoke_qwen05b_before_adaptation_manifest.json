@@ -1,0 +1,161 @@
+{
+  "schema_version": "phase10c_qwen_nla_loop_v1",
+  "generated_at": "2026-06-05T20:01:15.702649+00:00",
+  "cli_args": {
+    "activation_dir": "outputs/activations/validation_qwen25_coder_15b_l19_ctx512",
+    "qwen_av_checkpoint_dir": "outputs/checkpoints/qwen_av/smoke_refdesc_qwen05b_lora",
+    "qwen_ar_checkpoint_dir": "outputs/checkpoints/qwen_ar/smoke_refdesc_qwen05b_lora",
+    "output_dir": "outputs/reports/qwen_nla_loop",
+    "run_name": "smoke_qwen05b_before_adaptation",
+    "limit": 32,
+    "batch_size": 2,
+    "max_new_tokens": 128,
+    "seed": 42,
+    "overwrite": false,
+    "verbose": false
+  },
+  "activation_dir": "outputs/activations/validation_qwen25_coder_15b_l19_ctx512",
+  "qwen_av_checkpoint_dir": "outputs/checkpoints/qwen_av/smoke_refdesc_qwen05b_lora",
+  "qwen_ar_checkpoint_dir": "outputs/checkpoints/qwen_ar/smoke_refdesc_qwen05b_lora",
+  "output_dir": "outputs/reports/qwen_nla_loop",
+  "run_name": "smoke_qwen05b_before_adaptation",
+  "limit": 32,
+  "num_examples": 32,
+  "activation_dim": 1536,
+  "max_new_tokens": 128,
+  "batch_size": 2,
+  "seed": 42,
+  "qwen_av_checkpoint_summary": {
+    "schema_version": "phase10a_qwen_av_lora_v1",
+    "epoch": 1,
+    "config": {
+      "component": "qwen_av",
+      "model_name_or_path": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "activation_dim": 1536,
+      "dtype": "bfloat16",
+      "lora": {
+        "enabled": true,
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "target_text_field": "reference_description",
+      "fallback_text_fields": "prompt,code",
+      "max_target_length": 128
+    },
+    "validation_loss": 3.13783061504364,
+    "validation_metrics": null
+  },
+  "qwen_ar_checkpoint_summary": {
+    "schema_version": "phase10a_qwen_ar_lora_v1",
+    "epoch": 1,
+    "config": {
+      "component": "qwen_ar",
+      "model_name_or_path": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "activation_dim": 1536,
+      "dtype": "bfloat16",
+      "lora": {
+        "enabled": true,
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "text_field": "reference_description",
+      "fallback_text_fields": "prompt,code",
+      "target_transform": "standardize",
+      "max_length": 256,
+      "pooling": "final"
+    },
+    "validation_loss": null,
+    "validation_metrics": {
+      "fve": -0.06329989433288574,
+      "mse": 0.2060610055923462,
+      "rmse": 0.4539394294312251,
+      "cosine_mean": 0.9339089393615723,
+      "validation_train_mean_baseline_fve": -0.03378593921661377
+    }
+  },
+  "metrics": [
+    {
+      "run_name": "smoke_qwen05b_before_adaptation",
+      "method": "qwen_nla",
+      "num_examples": 32,
+      "activation_dim": 1536,
+      "fve": -0.07794034481048584,
+      "mse": 0.15755101044972739,
+      "rmse": 0.3969269585827188,
+      "mean_l2_error": 8.710097312927246,
+      "cosine_mean": 0.9472984671592712,
+      "cosine_std": 0.18197961151599884,
+      "cosine_min": 0.18491865694522858,
+      "cosine_max": 0.9970738291740417
+    },
+    {
+      "run_name": "smoke_qwen05b_before_adaptation",
+      "method": "mean",
+      "num_examples": 32,
+      "activation_dim": 1536,
+      "fve": 0.0,
+      "mse": 0.14615929126739502,
+      "rmse": 0.3823078488174092,
+      "mean_l2_error": 8.953922271728516,
+      "cosine_mean": 0.9501683115959167,
+      "cosine_std": 0.17147685587406158,
+      "cosine_min": 0.23355984687805176,
+      "cosine_max": 0.9967069029808044
+    },
+    {
+      "run_name": "smoke_qwen05b_before_adaptation",
+      "method": "zero",
+      "num_examples": 32,
+      "activation_dim": 1536,
+      "fve": -10.306170463562012,
+      "mse": 1.652501900990804,
+      "rmse": 1.285496752617759,
+      "mean_l2_error": 50.35736083984375,
+      "cosine_mean": 0.0,
+      "cosine_std": 0.0,
+      "cosine_min": 0.0,
+      "cosine_max": 0.0
+    },
+    {
+      "run_name": "smoke_qwen05b_before_adaptation",
+      "method": "shuffled",
+      "num_examples": 32,
+      "activation_dim": 1536,
+      "fve": -1.105088710784912,
+      "mse": 0.3076782822608948,
+      "rmse": 0.554687553728128,
+      "mean_l2_error": 13.248868942260742,
+      "cosine_mean": 0.8975169062614441,
+      "cosine_std": 0.24746623635292053,
+      "cosine_min": 0.19307513535022736,
+      "cosine_max": 0.9962780475616455
+    }
+  ],
+  "output_files": {
+    "metrics_csv": "outputs/reports/qwen_nla_loop/smoke_qwen05b_before_adaptation_qwen_nla_metrics.csv",
+    "metrics_json": "outputs/reports/qwen_nla_loop/smoke_qwen05b_before_adaptation_qwen_nla_metrics.json",
+    "generated": "outputs/reports/qwen_nla_loop/smoke_qwen05b_before_adaptation_generated_explanations.jsonl",
+    "per_example": "outputs/reports/qwen_nla_loop/smoke_qwen05b_before_adaptation_per_example_metrics.jsonl",
+    "manifest": "outputs/reports/qwen_nla_loop/smoke_qwen05b_before_adaptation_manifest.json"
+  }
+}

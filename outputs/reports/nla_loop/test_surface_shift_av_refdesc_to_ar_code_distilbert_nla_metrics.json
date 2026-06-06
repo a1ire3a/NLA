@@ -1,0 +1,58 @@
+[
+  {
+    "run_name": "test_surface_shift_av_refdesc_to_ar_code_distilbert",
+    "method": "nla",
+    "num_examples": 500,
+    "activation_dim": 1536,
+    "fve": -0.5057038068771362,
+    "mse": 0.29737889766693115,
+    "rmse": 0.5453245801052169,
+    "mean_l2_error": 17.809856414794922,
+    "cosine_mean": 0.9079996943473816,
+    "cosine_std": 0.18707405030727386,
+    "cosine_min": 0.11070405691862106,
+    "cosine_max": 0.9814146757125854
+  },
+  {
+    "run_name": "test_surface_shift_av_refdesc_to_ar_code_distilbert",
+    "method": "mean",
+    "num_examples": 500,
+    "activation_dim": 1536,
+    "fve": 0.0,
+    "mse": 0.19750156005223593,
+    "rmse": 0.44441147605820885,
+    "mean_l2_error": 10.316450119018555,
+    "cosine_mean": 0.9342193007469177,
+    "cosine_std": 0.2002534568309784,
+    "cosine_min": 0.13645417988300323,
+    "cosine_max": 0.9979251623153687
+  },
+  {
+    "run_name": "test_surface_shift_av_refdesc_to_ar_code_distilbert",
+    "method": "zero",
+    "num_examples": 500,
+    "activation_dim": 1536,
+    "fve": -7.253177642822266,
+    "mse": 1.6300156911214192,
+    "rmse": 1.2767206785829934,
+    "mean_l2_error": 50.01853561401367,
+    "cosine_mean": 0.0,
+    "cosine_std": 0.0,
+    "cosine_min": 0.0,
+    "cosine_max": 0.0
+  },
+  {
+    "run_name": "test_surface_shift_av_refdesc_to_ar_code_distilbert",
+    "method": "shuffled",
+    "num_examples": 500,
+    "activation_dim": 1536,
+    "fve": -0.9972695112228394,
+    "mse": 0.39446385701497394,
+    "rmse": 0.628063577207733,
+    "mean_l2_error": 14.89733600616455,
+    "cosine_mean": 0.8729851245880127,
+    "cosine_std": 0.27330294251441956,
+    "cosine_min": 0.11566787958145142,
+    "cosine_max": 1.000000238418579
+  }
+]

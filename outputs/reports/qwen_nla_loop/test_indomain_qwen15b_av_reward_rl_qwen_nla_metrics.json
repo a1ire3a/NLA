@@ -1,0 +1,58 @@
+[
+  {
+    "run_name": "test_indomain_qwen15b_av_reward_rl",
+    "method": "qwen_nla",
+    "num_examples": 500,
+    "activation_dim": 1536,
+    "fve": 0.40088385343551636,
+    "mse": 0.0791635662317276,
+    "rmse": 0.28136020726415384,
+    "mean_l2_error": 7.042006969451904,
+    "cosine_mean": 0.9687798023223877,
+    "cosine_std": 0.11311116069555283,
+    "cosine_min": 0.2146892249584198,
+    "cosine_max": 0.998822033405304
+  },
+  {
+    "run_name": "test_indomain_qwen15b_av_reward_rl",
+    "method": "mean",
+    "num_examples": 500,
+    "activation_dim": 1536,
+    "fve": 0.0,
+    "mse": 0.13213391105333963,
+    "rmse": 0.3635022847979633,
+    "mean_l2_error": 8.163129806518555,
+    "cosine_mean": 0.9572934508323669,
+    "cosine_std": 0.1608961969614029,
+    "cosine_min": 0.1793399602174759,
+    "cosine_max": 0.9984944462776184
+  },
+  {
+    "run_name": "test_indomain_qwen15b_av_reward_rl",
+    "method": "zero",
+    "num_examples": 500,
+    "activation_dim": 1536,
+    "fve": -11.57178783416748,
+    "mse": 1.66115935643514,
+    "rmse": 1.2888597116967928,
+    "mean_l2_error": 50.499610900878906,
+    "cosine_mean": 0.0,
+    "cosine_std": 0.0,
+    "cosine_min": 0.0,
+    "cosine_max": 0.0
+  },
+  {
+    "run_name": "test_indomain_qwen15b_av_reward_rl",
+    "method": "shuffled",
+    "num_examples": 500,
+    "activation_dim": 1536,
+    "fve": -0.9298924207687378,
+    "mse": 0.25500422716140747,
+    "rmse": 0.5049794324142395,
+    "mean_l2_error": 11.98437213897705,
+    "cosine_mean": 0.9191951751708984,
+    "cosine_std": 0.21731558442115784,
+    "cosine_min": 0.15333740413188934,
+    "cosine_max": 1.0000003576278687
+  }
+]

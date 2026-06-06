@@ -1,0 +1,163 @@
+{
+  "schema_version": "phase11_qwen_av_reward_rl_v1",
+  "generated_at": "2026-06-06T12:24:39.730258+00:00",
+  "cli_args": {
+    "activation_dir": "outputs/activations/train_qwen25_coder_15b_l19_ctx512",
+    "validation_activation_dir": "outputs/activations/validation_qwen25_coder_15b_l19_ctx512",
+    "output_dir": "outputs/checkpoints/qwen_rl/smoke_qwen15b_av_reward_rl",
+    "joint_checkpoint_dir": "outputs/checkpoints/qwen_joint/final_qwen15b_full_e20",
+    "qwen_av_checkpoint_dir": null,
+    "qwen_ar_checkpoint_dir": null,
+    "epochs": 1,
+    "batch_size": 1,
+    "gradient_accumulation_steps": 8,
+    "learning_rate_av": 5e-05,
+    "max_new_tokens": 64,
+    "max_ar_length": 256,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "num_return_sequences": 1,
+    "reward_normalization": "batch_zscore",
+    "kl_weight": 0.01,
+    "entropy_weight": 0.0,
+    "length_penalty_weight": 0.0,
+    "target_text_field": "reference_description",
+    "fallback_text_fields": "prompt,code",
+    "dtype": "bfloat16",
+    "device": "cuda",
+    "seed": 42,
+    "limit_train": 128,
+    "limit_validation": 64,
+    "eval_every_epoch": true,
+    "overwrite": false,
+    "verbose": false
+  },
+  "activation_dir": "outputs/activations/train_qwen25_coder_15b_l19_ctx512",
+  "validation_activation_dir": "outputs/activations/validation_qwen25_coder_15b_l19_ctx512",
+  "output_dir": "outputs/checkpoints/qwen_rl/smoke_qwen15b_av_reward_rl",
+  "checkpoint_mode": "joint",
+  "joint_checkpoint_dir": "outputs/checkpoints/qwen_joint/final_qwen15b_full_e20",
+  "qwen_av_checkpoint_dir": null,
+  "qwen_ar_checkpoint_dir": null,
+  "reward": "negative_l2_normalized_mse",
+  "reward_normalization": "batch_zscore",
+  "sampling": {
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "num_return_sequences": 1,
+    "max_new_tokens": 64
+  },
+  "regularization": {
+    "kl_weight": 0.01,
+    "entropy_weight": 0.0,
+    "length_penalty_weight": 0.0
+  },
+  "train_count": 128,
+  "validation_count": 64,
+  "activation_dim": 1536,
+  "best_epoch": 1,
+  "best_validation_metrics": {
+    "validation_nla_fve": 0.3152164816856384,
+    "validation_nla_mse": 0.13270684083302817,
+    "validation_nla_rmse": 0.36428950140379857,
+    "validation_cosine_mean": 0.9502778649330139,
+    "validation_normalized_mse": 6.474256224464625e-05,
+    "validation_reward_mean": -6.474256224464625e-05,
+    "validation_mean_baseline_mse": 0.19379385312398276,
+    "validation_zero_baseline_fve": -7.538816452026367,
+    "validation_shuffled_baseline_fve": -1.1089050769805908
+  },
+  "qwen_av_checkpoint_summary": {
+    "schema_version": "phase10d_qwen_joint_nla_v1",
+    "epoch": 20,
+    "config": {
+      "component": "qwen_av",
+      "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+      "activation_dim": 1536,
+      "dtype": "bfloat16",
+      "lora": {
+        "enabled": true,
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "target_text_field": "reference_description",
+      "fallback_text_fields": "prompt,code",
+      "max_target_length": 128,
+      "source_component": "qwen_joint_nla"
+    },
+    "validation_loss": null,
+    "validation_metrics": {
+      "validation_nla_fve": 0.3616231083869934,
+      "validation_nla_mse": 0.14973726868629456,
+      "validation_nla_rmse": 0.38695900129896776,
+      "validation_cosine_mean": 0.940772294998169,
+      "validation_mean_baseline_mse": 0.23455935716629028,
+      "validation_zero_baseline_fve": -6.04139518737793,
+      "validation_shuffled_baseline_fve": -1.0525121688842773
+    }
+  },
+  "qwen_ar_checkpoint_summary": {
+    "schema_version": "phase10d_qwen_joint_nla_v1",
+    "epoch": 20,
+    "config": {
+      "component": "qwen_ar",
+      "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+      "activation_dim": 1536,
+      "dtype": "bfloat16",
+      "lora": {
+        "enabled": true,
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "text_field": "reference_description",
+      "fallback_text_fields": "prompt,code",
+      "target_transform": "standardize",
+      "max_length": 256,
+      "pooling": "final",
+      "source_component": "qwen_joint_nla"
+    },
+    "validation_loss": null,
+    "validation_metrics": {
+      "validation_nla_fve": 0.3616231083869934,
+      "validation_nla_mse": 0.14973726868629456,
+      "validation_nla_rmse": 0.38695900129896776,
+      "validation_cosine_mean": 0.940772294998169,
+      "validation_mean_baseline_mse": 0.23455935716629028,
+      "validation_zero_baseline_fve": -6.04139518737793,
+      "validation_shuffled_baseline_fve": -1.0525121688842773
+    }
+  },
+  "output_files": {
+    "activation_projection": "activation_projection.pt",
+    "tokenizer": "tokenizer",
+    "qwen_adapter": "qwen_av_rl_adapter",
+    "qwen_av_rl_adapter": "qwen_av_rl_adapter",
+    "model": "model.pt",
+    "train_rl_metrics": "train_rl_metrics.csv",
+    "validation_generated_explanations": "validation_generated_explanations.jsonl",
+    "validation_predictions": "validation_predictions.pt",
+    "validation_targets": "validation_targets.pt",
+    "validation_per_example_metrics": "validation_per_example_metrics.jsonl",
+    "manifest": "train_qwen_av_reward_rl_manifest.json"
+  }
+}

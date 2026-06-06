@@ -1,0 +1,110 @@
+{
+  "builder_name": "parquet",
+  "citation": "",
+  "config_name": "python",
+  "dataset_name": "code_search_net",
+  "dataset_size": 1736139664,
+  "description": "",
+  "download_checksums": {
+    "hf://datasets/code_search_net@bd0cf261e357a3eb5c8fba490d23ec1a1cd59555/python/train-00000-of-00001.parquet": {
+      "num_bytes": 521785752,
+      "checksum": null
+    },
+    "hf://datasets/code_search_net@bd0cf261e357a3eb5c8fba490d23ec1a1cd59555/python/test-00000-of-00001.parquet": {
+      "num_bytes": 28744352,
+      "checksum": null
+    },
+    "hf://datasets/code_search_net@bd0cf261e357a3eb5c8fba490d23ec1a1cd59555/python/validation-00000-of-00001.parquet": {
+      "num_bytes": 30742555,
+      "checksum": null
+    }
+  },
+  "download_size": 581272659,
+  "features": {
+    "repository_name": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "func_path_in_repository": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "func_name": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "whole_func_string": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "language": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "func_code_string": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "func_code_tokens": {
+      "feature": {
+        "dtype": "string",
+        "_type": "Value"
+      },
+      "_type": "Sequence"
+    },
+    "func_documentation_string": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "func_documentation_tokens": {
+      "feature": {
+        "dtype": "string",
+        "_type": "Value"
+      },
+      "_type": "Sequence"
+    },
+    "split_name": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "func_code_url": {
+      "dtype": "string",
+      "_type": "Value"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 2317412323,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 1559643126,
+      "num_examples": 412178,
+      "shard_lengths": [
+        131000,
+        135000,
+        134000,
+        12178
+      ],
+      "dataset_name": "code_search_net"
+    },
+    "test": {
+      "name": "test",
+      "num_bytes": 84341908,
+      "num_examples": 22176,
+      "dataset_name": "code_search_net"
+    },
+    "validation": {
+      "name": "validation",
+      "num_bytes": 92154630,
+      "num_examples": 23107,
+      "dataset_name": "code_search_net"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}

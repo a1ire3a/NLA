@@ -1,0 +1,2 @@
+epoch,train_mse_loss,validation_fve,validation_mse,validation_rmse,validation_cosine_mean,validation_train_mean_baseline_fve,is_best
+1,3.072037828154862,-0.06329989433288574,0.2060610055923462,0.4539394294312251,0.9339089393615723,-0.03378593921661377,True

@@ -23,17 +23,17 @@ env/
 .ipynb_checkpoints/
 
 # Models, datasets, and generated artifacts
-models/
-checkpoints/
-artifacts/
-outputs/
-reports/generated/
-data/raw/
-data/processed/
-data/activations/
-data/cache/
-wandb/
-mlruns/
+#models/
+#checkpoints/
+#artifacts/
+#outputs/
+#reports/generated/
+#data/raw/
+#data/processed/
+#data/activations/
+#data/cache/
+#wandb/
+#mlruns/
 
 # Large files
 *.pt

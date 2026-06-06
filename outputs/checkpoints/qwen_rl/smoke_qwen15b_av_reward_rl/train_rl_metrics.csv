@@ -1,0 +1,2 @@
+epoch,policy_loss,sft_loss,entropy,reward_mean,reward_std,normalized_mse_mean,raw_mse_mean,generated_text_mean_length,validation_nla_fve,validation_normalized_mse,validation_reward_mean,is_best
+1,-3.88819663119655e-05,0.7522523145307787,1.5071456776931882,-6.864125877115157e-05,0.00016520538125500432,6.864125877115157e-05,0.15967374057072448,34.953125,0.3152164816856384,6.474256224464625e-05,-6.474256224464625e-05,True

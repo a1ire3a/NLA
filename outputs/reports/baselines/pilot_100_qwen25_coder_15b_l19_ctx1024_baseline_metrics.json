@@ -1,0 +1,44 @@
+[
+  {
+    "run_name": "pilot_100_qwen25_coder_15b_l19_ctx1024",
+    "baseline": "mean",
+    "num_examples": 100,
+    "activation_dim": 1536,
+    "fve": 0.0,
+    "mse": 0.017680628846089046,
+    "rmse": 0.1329685257724137,
+    "mean_l2_error": 5.082643032073975,
+    "cosine_mean": 0.9947220683097839,
+    "cosine_std": 0.0024722281377762556,
+    "cosine_min": 0.9867177605628967,
+    "cosine_max": 0.9980859160423279
+  },
+  {
+    "run_name": "pilot_100_qwen25_coder_15b_l19_ctx1024",
+    "baseline": "zero",
+    "num_examples": 100,
+    "activation_dim": 1536,
+    "fve": -93.23036193847656,
+    "mse": 1.6660521825154622,
+    "rmse": 1.290756438107307,
+    "mean_l2_error": 50.58479309082031,
+    "cosine_mean": 0.0,
+    "cosine_std": 0.0,
+    "cosine_min": 0.0,
+    "cosine_max": 0.0
+  },
+  {
+    "run_name": "pilot_100_qwen25_coder_15b_l19_ctx1024",
+    "baseline": "shuffled",
+    "num_examples": 100,
+    "activation_dim": 1536,
+    "fve": -1.0015242099761963,
+    "mse": 0.035388216376304626,
+    "rmse": 0.18811755998923818,
+    "mean_l2_error": 7.115994453430176,
+    "cosine_mean": 0.9894569516181946,
+    "cosine_std": 0.005525154061615467,
+    "cosine_min": 0.9725722670555115,
+    "cosine_max": 1.000000238418579
+  }
+]

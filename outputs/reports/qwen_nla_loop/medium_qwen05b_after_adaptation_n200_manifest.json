@@ -1,0 +1,169 @@
+{
+  "schema_version": "phase10c_qwen_nla_loop_v1",
+  "generated_at": "2026-06-05T20:51:14.335069+00:00",
+  "cli_args": {
+    "activation_dir": "outputs/activations/validation_qwen25_coder_15b_l19_ctx512",
+    "qwen_av_checkpoint_dir": "outputs/checkpoints/qwen_av/medium_refdesc_qwen05b_lora_e3_n1000",
+    "qwen_ar_checkpoint_dir": "outputs/checkpoints/qwen_nla/medium_qwen05b_generated_text_ar_adapt_e3_n1000",
+    "output_dir": "outputs/reports/qwen_nla_loop",
+    "run_name": "medium_qwen05b_after_adaptation_n200",
+    "limit": 200,
+    "batch_size": 2,
+    "max_new_tokens": 128,
+    "seed": 42,
+    "overwrite": false,
+    "verbose": false
+  },
+  "activation_dir": "outputs/activations/validation_qwen25_coder_15b_l19_ctx512",
+  "qwen_av_checkpoint_dir": "outputs/checkpoints/qwen_av/medium_refdesc_qwen05b_lora_e3_n1000",
+  "qwen_ar_checkpoint_dir": "outputs/checkpoints/qwen_nla/medium_qwen05b_generated_text_ar_adapt_e3_n1000",
+  "output_dir": "outputs/reports/qwen_nla_loop",
+  "run_name": "medium_qwen05b_after_adaptation_n200",
+  "limit": 200,
+  "num_examples": 200,
+  "activation_dim": 1536,
+  "max_new_tokens": 128,
+  "batch_size": 2,
+  "seed": 42,
+  "qwen_av_checkpoint_summary": {
+    "schema_version": "phase10a_qwen_av_lora_v1",
+    "epoch": 1,
+    "config": {
+      "component": "qwen_av",
+      "model_name_or_path": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "activation_dim": 1536,
+      "dtype": "bfloat16",
+      "lora": {
+        "enabled": true,
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "target_text_field": "reference_description",
+      "fallback_text_fields": "prompt,code",
+      "max_target_length": 128
+    },
+    "validation_loss": 2.8909438014030457,
+    "validation_metrics": null
+  },
+  "qwen_ar_checkpoint_summary": {
+    "schema_version": "phase10c_qwen_nla_reconstruction_v1",
+    "epoch": 3,
+    "config": {
+      "component": "qwen_ar",
+      "model_name_or_path": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+      "activation_dim": 1536,
+      "dtype": "bfloat16",
+      "lora": {
+        "enabled": true,
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "text_field": "reference_description",
+      "fallback_text_fields": "prompt,code",
+      "target_transform": "standardize",
+      "max_length": 256,
+      "pooling": "final",
+      "adaptation": {
+        "phase": "10c",
+        "source_text": "qwen_av_generated_text",
+        "source_qwen_ar_checkpoint_dir": "outputs/checkpoints/qwen_ar/medium_refdesc_qwen05b_lora_e3_n1000",
+        "qwen_av_checkpoint_dir": "outputs/checkpoints/qwen_av/medium_refdesc_qwen05b_lora_e3_n1000"
+      }
+    },
+    "validation_loss": null,
+    "validation_metrics": {
+      "validation_fve": 0.49406176805496216,
+      "validation_mse": 0.13174275557200113,
+      "validation_rmse": 0.3629638488499938,
+      "validation_cosine_mean": 0.944691002368927,
+      "validation_mean_baseline_fve": 0.0,
+      "validation_zero_baseline_fve": -5.345505714416504,
+      "validation_shuffled_baseline_fve": -1.1051552295684814
+    }
+  },
+  "metrics": [
+    {
+      "run_name": "medium_qwen05b_after_adaptation_n200",
+      "method": "qwen_nla",
+      "num_examples": 200,
+      "activation_dim": 1536,
+      "fve": 0.49406176805496216,
+      "mse": 0.13174275557200113,
+      "rmse": 0.3629638488499938,
+      "mean_l2_error": 8.880931854248047,
+      "cosine_mean": 0.944691002368927,
+      "cosine_std": 0.14181342720985413,
+      "cosine_min": 0.4108027219772339,
+      "cosine_max": 0.9987613558769226
+    },
+    {
+      "run_name": "medium_qwen05b_after_adaptation_n200",
+      "method": "mean",
+      "num_examples": 200,
+      "activation_dim": 1536,
+      "fve": 0.0,
+      "mse": 0.2603929440180461,
+      "rmse": 0.5102871191966794,
+      "mean_l2_error": 12.713550567626953,
+      "cosine_mean": 0.9135673642158508,
+      "cosine_std": 0.2228003591299057,
+      "cosine_min": 0.1786881983280182,
+      "cosine_max": 0.99672532081604
+    },
+    {
+      "run_name": "medium_qwen05b_after_adaptation_n200",
+      "method": "zero",
+      "num_examples": 200,
+      "activation_dim": 1536,
+      "fve": -5.345505714416504,
+      "mse": 1.6523246765136719,
+      "rmse": 1.2854278184766625,
+      "mean_l2_error": 50.355072021484375,
+      "cosine_mean": 0.0,
+      "cosine_std": 0.0,
+      "cosine_min": 0.0,
+      "cosine_max": 0.0
+    },
+    {
+      "run_name": "medium_qwen05b_after_adaptation_n200",
+      "method": "shuffled",
+      "num_examples": 200,
+      "activation_dim": 1536,
+      "fve": -1.1051552295684814,
+      "mse": 0.5481676260630289,
+      "rmse": 0.7403834317858746,
+      "mean_l2_error": 18.82050323486328,
+      "cosine_mean": 0.826601505279541,
+      "cosine_std": 0.3058616816997528,
+      "cosine_min": 0.140175923705101,
+      "cosine_max": 1.000000238418579
+    }
+  ],
+  "output_files": {
+    "metrics_csv": "outputs/reports/qwen_nla_loop/medium_qwen05b_after_adaptation_n200_qwen_nla_metrics.csv",
+    "metrics_json": "outputs/reports/qwen_nla_loop/medium_qwen05b_after_adaptation_n200_qwen_nla_metrics.json",
+    "generated": "outputs/reports/qwen_nla_loop/medium_qwen05b_after_adaptation_n200_generated_explanations.jsonl",
+    "per_example": "outputs/reports/qwen_nla_loop/medium_qwen05b_after_adaptation_n200_per_example_metrics.jsonl",
+    "manifest": "outputs/reports/qwen_nla_loop/medium_qwen05b_after_adaptation_n200_manifest.json"
+  }
+}

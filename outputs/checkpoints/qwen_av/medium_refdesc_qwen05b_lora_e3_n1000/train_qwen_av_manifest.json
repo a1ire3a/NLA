@@ -1,0 +1,65 @@
+{
+  "schema_version": "phase10a_qwen_av_lora_v1",
+  "generated_at": "2026-06-05T20:30:39.084853+00:00",
+  "cli_args": {
+    "activation_dir": "outputs/activations/train_qwen25_coder_15b_l19_ctx512",
+    "validation_activation_dir": "outputs/activations/validation_qwen25_coder_15b_l19_ctx512",
+    "output_dir": "outputs/checkpoints/qwen_av/medium_refdesc_qwen05b_lora_e3_n1000",
+    "model_name_or_path": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+    "target_text_field": "reference_description",
+    "fallback_text_fields": "prompt,code",
+    "epochs": 3,
+    "batch_size": 2,
+    "learning_rate": 0.0002,
+    "max_target_length": 128,
+    "lora_r": 8,
+    "lora_alpha": 16,
+    "lora_dropout": 0.05,
+    "dtype": "bfloat16",
+    "device": "cuda",
+    "seed": 42,
+    "limit_train": 1000,
+    "limit_validation": 200,
+    "overwrite": false,
+    "verbose": false
+  },
+  "activation_dir": "outputs/activations/train_qwen25_coder_15b_l19_ctx512",
+  "validation_activation_dir": "outputs/activations/validation_qwen25_coder_15b_l19_ctx512",
+  "output_dir": "outputs/checkpoints/qwen_av/medium_refdesc_qwen05b_lora_e3_n1000",
+  "model_name_or_path": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+  "target_text_field": "reference_description",
+  "fallback_text_fields": [
+    "prompt",
+    "code"
+  ],
+  "lora": {
+    "enabled": true,
+    "r": 8,
+    "alpha": 16,
+    "dropout": 0.05,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ]
+  },
+  "dtype": "bfloat16",
+  "train_count": 1000,
+  "validation_count": 200,
+  "activation_dim": 1536,
+  "best_epoch": 1,
+  "best_validation_loss": 2.8909438014030457,
+  "output_files": {
+    "activation_projection": "activation_projection.pt",
+    "tokenizer": "tokenizer",
+    "qwen_adapter": "qwen_adapter",
+    "model": "model.pt",
+    "training_metrics": "training_metrics.csv",
+    "validation_generations": "validation_generations.jsonl",
+    "manifest": "train_qwen_av_manifest.json"
+  }
+}

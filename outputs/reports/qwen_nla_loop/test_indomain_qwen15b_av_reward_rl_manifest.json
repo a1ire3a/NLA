@@ -1,0 +1,260 @@
+{
+  "schema_version": "phase10c_qwen_nla_loop_v1",
+  "generated_at": "2026-06-06T14:51:29.602944+00:00",
+  "cli_args": {
+    "activation_dir": "outputs/activations/test_indomain_qwen25_coder_15b_l19_ctx512",
+    "qwen_av_checkpoint_dir": null,
+    "qwen_ar_checkpoint_dir": null,
+    "joint_checkpoint_dir": "outputs/checkpoints/qwen_joint/final_qwen15b_full_e20",
+    "rl_av_checkpoint_dir": "outputs/checkpoints/qwen_rl/final_qwen15b_av_reward_rl",
+    "output_dir": "outputs/reports/qwen_nla_loop",
+    "run_name": "test_indomain_qwen15b_av_reward_rl",
+    "limit": null,
+    "batch_size": 2,
+    "max_new_tokens": 64,
+    "seed": 42,
+    "overwrite": false,
+    "verbose": false
+  },
+  "activation_dir": "outputs/activations/test_indomain_qwen25_coder_15b_l19_ctx512",
+  "qwen_av_checkpoint_dir": null,
+  "qwen_ar_checkpoint_dir": null,
+  "joint_checkpoint_dir": "outputs/checkpoints/qwen_joint/final_qwen15b_full_e20",
+  "rl_av_checkpoint_dir": "outputs/checkpoints/qwen_rl/final_qwen15b_av_reward_rl",
+  "output_dir": "outputs/reports/qwen_nla_loop",
+  "run_name": "test_indomain_qwen15b_av_reward_rl",
+  "limit": null,
+  "num_examples": 500,
+  "activation_dim": 1536,
+  "max_new_tokens": 64,
+  "batch_size": 2,
+  "seed": 42,
+  "qwen_av_checkpoint_summary": {
+    "schema_version": "phase11_qwen_av_reward_rl_v1",
+    "epoch": 2,
+    "config": {
+      "component": "qwen_av",
+      "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+      "activation_dim": 1536,
+      "dtype": "bfloat16",
+      "lora": {
+        "enabled": true,
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "target_text_field": "reference_description",
+      "fallback_text_fields": "prompt,code",
+      "max_new_tokens": 64,
+      "max_ar_length": 256,
+      "training_stage": "phase11_av_reward_rl",
+      "source_joint_checkpoint_dir": "outputs/checkpoints/qwen_joint/final_qwen15b_full_e20",
+      "source_qwen_av_checkpoint_dir": null,
+      "source_qwen_ar_checkpoint_dir": null,
+      "ar_reference": {
+        "schema_version": "phase10d_qwen_joint_nla_v1",
+        "epoch": 20,
+        "config": {
+          "component": "qwen_ar",
+          "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+          "activation_dim": 1536,
+          "dtype": "bfloat16",
+          "lora": {
+            "enabled": true,
+            "r": 8,
+            "alpha": 16,
+            "dropout": 0.05,
+            "target_modules": [
+              "q_proj",
+              "k_proj",
+              "v_proj",
+              "o_proj",
+              "gate_proj",
+              "up_proj",
+              "down_proj"
+            ]
+          },
+          "text_field": "reference_description",
+          "fallback_text_fields": "prompt,code",
+          "target_transform": "standardize",
+          "max_length": 256,
+          "pooling": "final",
+          "source_component": "qwen_joint_nla"
+        }
+      }
+    },
+    "validation_loss": null,
+    "validation_metrics": {
+      "validation_nla_fve": 0.45739251375198364,
+      "validation_nla_mse": 0.1272736390431722,
+      "validation_nla_rmse": 0.35675431187747714,
+      "validation_cosine_mean": 0.947462797164917,
+      "validation_normalized_mse": 6.84080587234348e-05,
+      "validation_reward_mean": -6.84080587234348e-05,
+      "validation_mean_baseline_mse": 0.23455935716629028,
+      "validation_zero_baseline_fve": -6.04139518737793,
+      "validation_shuffled_baseline_fve": -1.0525121688842773
+    }
+  },
+  "qwen_ar_checkpoint_summary": {
+    "schema_version": "phase10d_qwen_joint_nla_v1",
+    "epoch": 20,
+    "config": {
+      "component": "qwen_ar",
+      "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+      "activation_dim": 1536,
+      "dtype": "bfloat16",
+      "lora": {
+        "enabled": true,
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "text_field": "reference_description",
+      "fallback_text_fields": "prompt,code",
+      "target_transform": "standardize",
+      "max_length": 256,
+      "pooling": "final",
+      "source_component": "qwen_joint_nla"
+    },
+    "validation_loss": null,
+    "validation_metrics": {
+      "validation_nla_fve": 0.3616231083869934,
+      "validation_nla_mse": 0.14973726868629456,
+      "validation_nla_rmse": 0.38695900129896776,
+      "validation_cosine_mean": 0.940772294998169,
+      "validation_mean_baseline_mse": 0.23455935716629028,
+      "validation_zero_baseline_fve": -6.04139518737793,
+      "validation_shuffled_baseline_fve": -1.0525121688842773
+    }
+  },
+  "joint_checkpoint_summary": {
+    "schema_version": "phase10d_qwen_joint_nla_v1",
+    "epoch": 20,
+    "config": {
+      "component": "qwen_joint_nla",
+      "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+      "activation_dim": 1536,
+      "dtype": "bfloat16",
+      "lora": {
+        "enabled": true,
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "target_text_field": "reference_description",
+      "fallback_text_fields": "prompt,code",
+      "target_transform": "standardize",
+      "max_target_length": 128,
+      "max_ar_length": 256,
+      "max_new_tokens": 64,
+      "pooling": "final",
+      "loss_weights": {
+        "av_loss_weight": 1.0,
+        "ar_generated_loss_weight": 1.0,
+        "ar_anchor_loss_weight": 0.25
+      }
+    },
+    "validation_metrics": {
+      "validation_nla_fve": 0.3616231083869934,
+      "validation_nla_mse": 0.14973726868629456,
+      "validation_nla_rmse": 0.38695900129896776,
+      "validation_cosine_mean": 0.940772294998169,
+      "validation_mean_baseline_mse": 0.23455935716629028,
+      "validation_zero_baseline_fve": -6.04139518737793,
+      "validation_shuffled_baseline_fve": -1.0525121688842773
+    }
+  },
+  "metrics": [
+    {
+      "run_name": "test_indomain_qwen15b_av_reward_rl",
+      "method": "qwen_nla",
+      "num_examples": 500,
+      "activation_dim": 1536,
+      "fve": 0.40088385343551636,
+      "mse": 0.0791635662317276,
+      "rmse": 0.28136020726415384,
+      "mean_l2_error": 7.042006969451904,
+      "cosine_mean": 0.9687798023223877,
+      "cosine_std": 0.11311116069555283,
+      "cosine_min": 0.2146892249584198,
+      "cosine_max": 0.998822033405304
+    },
+    {
+      "run_name": "test_indomain_qwen15b_av_reward_rl",
+      "method": "mean",
+      "num_examples": 500,
+      "activation_dim": 1536,
+      "fve": 0.0,
+      "mse": 0.13213391105333963,
+      "rmse": 0.3635022847979633,
+      "mean_l2_error": 8.163129806518555,
+      "cosine_mean": 0.9572934508323669,
+      "cosine_std": 0.1608961969614029,
+      "cosine_min": 0.1793399602174759,
+      "cosine_max": 0.9984944462776184
+    },
+    {
+      "run_name": "test_indomain_qwen15b_av_reward_rl",
+      "method": "zero",
+      "num_examples": 500,
+      "activation_dim": 1536,
+      "fve": -11.57178783416748,
+      "mse": 1.66115935643514,
+      "rmse": 1.2888597116967928,
+      "mean_l2_error": 50.499610900878906,
+      "cosine_mean": 0.0,
+      "cosine_std": 0.0,
+      "cosine_min": 0.0,
+      "cosine_max": 0.0
+    },
+    {
+      "run_name": "test_indomain_qwen15b_av_reward_rl",
+      "method": "shuffled",
+      "num_examples": 500,
+      "activation_dim": 1536,
+      "fve": -0.9298924207687378,
+      "mse": 0.25500422716140747,
+      "rmse": 0.5049794324142395,
+      "mean_l2_error": 11.98437213897705,
+      "cosine_mean": 0.9191951751708984,
+      "cosine_std": 0.21731558442115784,
+      "cosine_min": 0.15333740413188934,
+      "cosine_max": 1.0000003576278687
+    }
+  ],
+  "output_files": {
+    "metrics_csv": "outputs/reports/qwen_nla_loop/test_indomain_qwen15b_av_reward_rl_qwen_nla_metrics.csv",
+    "metrics_json": "outputs/reports/qwen_nla_loop/test_indomain_qwen15b_av_reward_rl_qwen_nla_metrics.json",
+    "generated": "outputs/reports/qwen_nla_loop/test_indomain_qwen15b_av_reward_rl_generated_explanations.jsonl",
+    "per_example": "outputs/reports/qwen_nla_loop/test_indomain_qwen15b_av_reward_rl_per_example_metrics.jsonl",
+    "manifest": "outputs/reports/qwen_nla_loop/test_indomain_qwen15b_av_reward_rl_manifest.json"
+  }
+}

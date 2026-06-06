@@ -1,0 +1,49 @@
+{
+  "schema_version": "phase2_v1",
+  "generated_at": "2026-06-05T14:14:43.430831+00:00",
+  "cli_args": {
+    "codesearchnet_path": "data/raw/code_search_net_python",
+    "humaneval_x_python_path": "data/raw/humaneval_x_python",
+    "humaneval_x_cpp_path": "data/raw/humaneval_x_cpp",
+    "humaneval_x_java_path": "data/raw/humaneval_x_java",
+    "output_dir": "data/processed",
+    "pilot_size": 100,
+    "train_size": 5000,
+    "validation_size": 500,
+    "test_size": 500,
+    "max_code_chars": 4000,
+    "min_code_chars": 40,
+    "seed": 42,
+    "allow_missing_humaneval": false,
+    "verbose": false
+  },
+  "input_paths": {
+    "codesearchnet_path": "data/raw/code_search_net_python",
+    "humaneval_x_python_path": "data/raw/humaneval_x_python",
+    "humaneval_x_cpp_path": "data/raw/humaneval_x_cpp",
+    "humaneval_x_java_path": "data/raw/humaneval_x_java"
+  },
+  "output_counts": {
+    "pilot_100.jsonl": 100,
+    "train.jsonl": 5000,
+    "validation.jsonl": 500,
+    "test_indomain.jsonl": 500,
+    "test_surface_shift.jsonl": 500,
+    "test_language_shift.jsonl": 361
+  },
+  "counts_by_language": {
+    "cpp": 164,
+    "java": 164,
+    "python": 6633
+  },
+  "counts_by_transformation_type": {
+    "language_shift": 361,
+    "original": 6100,
+    "rename_identifiers": 500
+  },
+  "warnings": [
+    "humaneval_x_python:test requested 500 examples after filtering, but only 33 were available.",
+    "humaneval_x_cpp:test requested 500 examples after filtering, but only 164 were available.",
+    "humaneval_x_java:test requested 500 examples after filtering, but only 164 were available."
+  ]
+}

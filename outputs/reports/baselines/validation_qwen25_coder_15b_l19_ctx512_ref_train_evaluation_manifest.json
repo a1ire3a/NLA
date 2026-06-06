@@ -1,0 +1,74 @@
+{
+  "schema_version": "phase4_baseline_eval_v1",
+  "generated_at": "2026-06-05T16:14:40.050043+00:00",
+  "cli_args": {
+    "activation_dir": "outputs/activations/validation_qwen25_coder_15b_l19_ctx512",
+    "reference_activation_dir": "outputs/activations/train_qwen25_coder_15b_l19_ctx512",
+    "output_dir": "outputs/reports/baselines",
+    "run_name": "validation_qwen25_coder_15b_l19_ctx512_ref_train",
+    "seed": 42,
+    "overwrite": false,
+    "verbose": false
+  },
+  "activation_dir": "outputs/activations/validation_qwen25_coder_15b_l19_ctx512",
+  "reference_activation_dir": "outputs/activations/train_qwen25_coder_15b_l19_ctx512",
+  "run_name": "validation_qwen25_coder_15b_l19_ctx512_ref_train",
+  "num_examples": 500,
+  "activation_dim": 1536,
+  "activation_artifact_manifest_summary": {
+    "schema_version": "phase3_activation_v1",
+    "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "layer_index": 19,
+    "token_position": "final_non_padding",
+    "num_examples": 500,
+    "activation_dim": 1536,
+    "activation_shape": [
+      500,
+      1536
+    ],
+    "activation_dtype": "float32",
+    "truncation_count": 51,
+    "activation_summary": {
+      "mean": 0.06365878134965897,
+      "std": 1.2835780382156372,
+      "min": -24.875,
+      "max": 20.5,
+      "average_l2_norm": 50.340824127197266
+    }
+  },
+  "reference_artifact_manifest_summary": {
+    "schema_version": "phase3_activation_v1",
+    "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "layer_index": 19,
+    "token_position": "final_non_padding",
+    "num_examples": 5000,
+    "activation_dim": 1536,
+    "activation_shape": [
+      5000,
+      1536
+    ],
+    "activation_dtype": "float32",
+    "truncation_count": 368,
+    "activation_summary": {
+      "mean": 0.0650126039981842,
+      "std": 1.2855316400527954,
+      "min": -26.5,
+      "max": 21.125,
+      "average_l2_norm": 50.429317474365234
+    }
+  },
+  "baseline_names": [
+    "mean",
+    "zero",
+    "shuffled"
+  ],
+  "output_files": {
+    "csv": "outputs/reports/baselines/validation_qwen25_coder_15b_l19_ctx512_ref_train_baseline_metrics.csv",
+    "json": "outputs/reports/baselines/validation_qwen25_coder_15b_l19_ctx512_ref_train_baseline_metrics.json",
+    "per_example": "outputs/reports/baselines/validation_qwen25_coder_15b_l19_ctx512_ref_train_per_example_errors.jsonl",
+    "manifest": "outputs/reports/baselines/validation_qwen25_coder_15b_l19_ctx512_ref_train_evaluation_manifest.json"
+  },
+  "notes": [
+    "When the mean baseline is computed from the same target tensor, FVE should be approximately 0 by construction."
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "schema_version": "phase8_full_nla_loop_v1",
+  "generated_at": "2026-06-05T18:47:18.713057+00:00",
+  "cli_args": {
+    "activation_dir": "outputs/activations/test_indomain_qwen25_coder_15b_l19_ctx512",
+    "av_checkpoint_dir": "outputs/checkpoints/av/train5000_val500_qwen25_coder_15b_l19_ctx512_refdesc_distilgpt2",
+    "ar_checkpoint_dir": "outputs/checkpoints/ar/train5000_val500_qwen25_coder_15b_l19_ctx512_code_distilbert_standardize",
+    "output_dir": "outputs/reports/nla_loop",
+    "run_name": "test_indomain_av_refdesc_to_ar_code_distilbert",
+    "limit": null,
+    "max_new_tokens": 64,
+    "batch_size": 8,
+    "seed": 42,
+    "overwrite": false,
+    "verbose": false
+  },
+  "activation_dir": "outputs/activations/test_indomain_qwen25_coder_15b_l19_ctx512",
+  "av_checkpoint_dir": "outputs/checkpoints/av/train5000_val500_qwen25_coder_15b_l19_ctx512_refdesc_distilgpt2",
+  "ar_checkpoint_dir": "outputs/checkpoints/ar/train5000_val500_qwen25_coder_15b_l19_ctx512_code_distilbert_standardize",
+  "output_dir": "outputs/reports/nla_loop",
+  "run_name": "test_indomain_av_refdesc_to_ar_code_distilbert",
+  "limit": null,
+  "num_examples": 500,
+  "activation_dim": 1536,
+  "max_new_tokens": 64,
+  "batch_size": 8,
+  "seed": 42,
+  "activation_artifact_manifest_summary": {
+    "schema_version": "phase3_activation_v1",
+    "model_name_or_path": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "layer_index": 19,
+    "token_position": "final_non_padding",
+    "num_examples": 500,
+    "activation_dim": 1536,
+    "activation_shape": [
+      500,
+      1536
+    ],
+    "activation_dtype": "float32",
+    "truncation_count": 26,
+    "activation_summary": {
+      "mean": 0.0660300925374031,
+      "std": 1.2871671915054321,
+      "min": -23.625,
+      "max": 18.75,
+      "average_l2_norm": 50.499603271484375
+    }
+  },
+  "av_checkpoint_summary": {
+    "schema_version": "phase7_av_training_v1",
+    "epoch": 3,
+    "config": {
+      "text_model_name_or_path": "distilgpt2",
+      "activation_dim": 1536,
+      "freeze_lm": false,
+      "target_text_field": "reference_description",
+      "fallback_text_fields": "code,prompt",
+      "max_target_length": 64
+    },
+    "validation_loss": 3.0987505264282227
+  },
+  "ar_checkpoint_summary": {
+    "schema_version": "phase5b_ar_training_v2",
+    "epoch": 20,
+    "config": {
+      "text_model_name_or_path": "distilbert-base-uncased",
+      "activation_dim": 1536,
+      "pooling": "mean",
+      "projection_hidden_dim": null,
+      "dropout": 0.0,
+      "freeze_text_model": true,
+      "text_field": "code",
+      "fallback_text_fields": "prompt,code",
+      "max_length": 512,
+      "target_transform": "standardize"
+    },
+    "validation_metrics": {
+      "fve": 0.23892736434936523,
+      "mse": 0.17851670583089194,
+      "rmse": 0.42251237358317917,
+      "mean_l2_error": 10.506331443786621,
+      "cosine_mean": 0.9320635199546814,
+      "cosine_std": 0.18448451161384583,
+      "cosine_min": 0.2364860475063324,
+      "cosine_max": 0.9983599185943604
+    }
+  },
+  "target_transform": "standardize",
+  "metrics": [
+    {
+      "run_name": "test_indomain_av_refdesc_to_ar_code_distilbert",
+      "method": "nla",
+      "num_examples": 500,
+      "activation_dim": 1536,
+      "fve": -0.7582544088363647,
+      "mse": 0.23232503732045492,
+      "rmse": 0.48200107605736203,
+      "mean_l2_error": 16.32414436340332,
+      "cosine_mean": 0.9295048117637634,
+      "cosine_std": 0.1478959321975708,
+      "cosine_min": 0.13196706771850586,
+      "cosine_max": 0.980388343334198
+    },
+    {
+      "run_name": "test_indomain_av_refdesc_to_ar_code_distilbert",
+      "method": "mean",
+      "num_examples": 500,
+      "activation_dim": 1536,
+      "fve": 0.0,
+      "mse": 0.13213391105333963,
+      "rmse": 0.3635022847979633,
+      "mean_l2_error": 8.163129806518555,
+      "cosine_mean": 0.9572934508323669,
+      "cosine_std": 0.1608961969614029,
+      "cosine_min": 0.1793399602174759,
+      "cosine_max": 0.9984944462776184
+    },
+    {
+      "run_name": "test_indomain_av_refdesc_to_ar_code_distilbert",
+      "method": "zero",
+      "num_examples": 500,
+      "activation_dim": 1536,
+      "fve": -11.57178783416748,
+      "mse": 1.66115935643514,
+      "rmse": 1.2888597116967928,
+      "mean_l2_error": 50.499610900878906,
+      "cosine_mean": 0.0,
+      "cosine_std": 0.0,
+      "cosine_min": 0.0,
+      "cosine_max": 0.0
+    },
+    {
+      "run_name": "test_indomain_av_refdesc_to_ar_code_distilbert",
+      "method": "shuffled",
+      "num_examples": 500,
+      "activation_dim": 1536,
+      "fve": -0.9298924207687378,
+      "mse": 0.25500422716140747,
+      "rmse": 0.5049794324142395,
+      "mean_l2_error": 11.98437213897705,
+      "cosine_mean": 0.9191951751708984,
+      "cosine_std": 0.21731558442115784,
+      "cosine_min": 0.15333740413188934,
+      "cosine_max": 1.0000003576278687
+    }
+  ],
+  "output_files": {
+    "metrics_csv": "outputs/reports/nla_loop/test_indomain_av_refdesc_to_ar_code_distilbert_nla_metrics.csv",
+    "metrics_json": "outputs/reports/nla_loop/test_indomain_av_refdesc_to_ar_code_distilbert_nla_metrics.json",
+    "generated": "outputs/reports/nla_loop/test_indomain_av_refdesc_to_ar_code_distilbert_generated_explanations.jsonl",
+    "per_example": "outputs/reports/nla_loop/test_indomain_av_refdesc_to_ar_code_distilbert_per_example_metrics.jsonl",
+    "manifest": "outputs/reports/nla_loop/test_indomain_av_refdesc_to_ar_code_distilbert_manifest.json"
+  },
+  "notes": [
+    "AR input text is AV-generated natural language, even though the selected Phase 6c AR checkpoint was trained on code text.",
+    "Mean baseline is computed from the same target subset in this Phase 8 CLI."
+  ]
+}

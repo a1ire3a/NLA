@@ -1,0 +1,44 @@
+[
+  {
+    "run_name": "pilot_100_qwen25_coder_15b_l19_ctx512",
+    "baseline": "mean",
+    "num_examples": 100,
+    "activation_dim": 1536,
+    "fve": 0.0,
+    "mse": 0.03174436340729395,
+    "rmse": 0.17816947944946673,
+    "mean_l2_error": 5.516619682312012,
+    "cosine_mean": 0.9900528788566589,
+    "cosine_std": 0.04633856937289238,
+    "cosine_min": 0.5296406149864197,
+    "cosine_max": 0.9980548024177551
+  },
+  {
+    "run_name": "pilot_100_qwen25_coder_15b_l19_ctx512",
+    "baseline": "zero",
+    "num_examples": 100,
+    "activation_dim": 1536,
+    "fve": -51.4018440246582,
+    "mse": 1.6634632746378581,
+    "rmse": 1.2897531836122205,
+    "mean_l2_error": 50.543174743652344,
+    "cosine_mean": 0.0,
+    "cosine_std": 0.0,
+    "cosine_min": 0.0,
+    "cosine_max": 0.0
+  },
+  {
+    "run_name": "pilot_100_qwen25_coder_15b_l19_ctx512",
+    "baseline": "shuffled",
+    "num_examples": 100,
+    "activation_dim": 1536,
+    "fve": -1.0147366523742676,
+    "mse": 0.0639565388361613,
+    "rmse": 0.25289630055847256,
+    "mean_l2_error": 7.920648097991943,
+    "cosine_mean": 0.9801282286643982,
+    "cosine_std": 0.0654330849647522,
+    "cosine_min": 0.5236140489578247,
+    "cosine_max": 1.000000238418579
+  }
+]
