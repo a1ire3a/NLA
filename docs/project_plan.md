@@ -4,9 +4,9 @@ This document is the active roadmap for the project.
 
 ## Current Phase
 
-**Current phase:** Phase 10d — Final 1.5B aligned Qwen run.
+**Current phase:** Phase 11 — Reward-driven AV optimization.
 
-**Immediate next step:** run the established aligned Qwen recipe with `Qwen/Qwen2.5-Coder-1.5B-Instruct`.
+**Immediate next step:** use the Phase 10d Qwen 1.5B checkpoint as a warm start for reconstruction-reward AV training.
 
 ## Completed phases
 
@@ -23,38 +23,35 @@ This document is the active roadmap for the project.
 | Phase 9 — Debug controlled tests | Complete |
 | Phase 10a — Qwen AR/AV smoke | Complete |
 | Phase 10c — Medium 0.5B aligned Qwen run | Complete |
+| Phase 10d — Final 1.5B aligned Qwen run | Complete |
 
 ## Phase 10c summary
 
-### Medium validation result
-
 | Run | FVE | MSE |
 |---|---:|---:|
-| Qwen NLA before adaptation | -0.088272 | 0.283378 |
-| Qwen NLA after adaptation | 0.494062 | 0.131743 |
-
-### Medium test result
-
-| Split | FVE | MSE | Mean MSE |
-|---|---:|---:|---:|
-| `test_indomain` | 0.467127 | 0.070411 | 0.132134 |
-| `test_surface_shift` | 0.490873 | 0.100553 | 0.197502 |
-| `test_language_shift` | -5.194088 | 0.118358 | 0.019108 |
+| Medium Qwen 0.5B before adaptation | -0.088272 | 0.283378 |
+| Medium Qwen 0.5B after adaptation | 0.494062 | 0.131743 |
 
 Reports:
 
 - `docs/phase_results/phase_10c_qwen_medium_aligned_run.md`
 - `docs/phase_results/phase_10c_qwen_medium_test_evaluation.md`
 
-Decision: proceed to the final 1.5B aligned Qwen run. The language-shift split remains a limitation to report separately.
+## Phase 10d summary
 
-## Phase 10d — Final 1.5B run
+| Run | Model | Train / validation | Epochs | FVE | MSE | Mean MSE |
+|---|---|---:|---:|---:|---:|---:|
+| Final aligned joint NLA | `Qwen/Qwen2.5-Coder-1.5B-Instruct` | 5000 / 500 | 20 | 0.361623 | 0.149737 | 0.234559 |
+
+Report:
+
+- `docs/phase_results/phase_10d_qwen15b_joint_run.md`
+
+Decision: the final 1.5B aligned run beats the mean baseline on full validation, but it is still an aligned supervised/alternating approximation. Proceed to Phase 11 to add reward-driven AV optimization.
+
+## Phase 11 — Reward-driven AV optimization
 
 **Status:** Current phase.
-
-## Phase 11 — Final controlled evaluation
-
-**Status:** Not started.
 
 ## Phase 12 — Final report
 
