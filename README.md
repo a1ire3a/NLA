@@ -10,11 +10,11 @@ The central question is:
 
 The README is the short final report. The detailed execution trail is split as follows:
 
-- `docs/project_plan.md` — current roadmap and completed phases.
-- `docs/research_log.md` — central narrative log of decisions, challenges, and results.
-- `docs/phase_results/` — phase-by-phase reports with quantitative results.
-- `experiments/` — lightweight CSV experiment registries and metric summaries.
-- `docs/manual_installation.md` — setup and reproduction instructions.
+- [docs/project_plan.md](docs/project_plan.md) — current roadmap and completed phases.
+- [docs/research_log.md](docs/research_log.md) — central narrative log of decisions, challenges, and results.
+- [docs/phase_results/](docs/phase_results/) — phase-by-phase reports with quantitative results.
+- [experiments/](experiments/) — lightweight CSV experiment registries and metric summaries.
+- [docs/manual_installation.md](docs/manual_installation.md) — setup and reproduction instructions.
 
 Large raw artifacts are intentionally not committed; the repository keeps reproducible code and compact documentation instead.
 
@@ -115,9 +115,9 @@ This is an important limitation: the system can learn activation-preserving text
 
 Manual setup is documented in:
 
-- `docs/manual_installation.md`
-- `docs/research_log.md`
-- `docs/phase_results/`
+- [docs/manual_installation.md](docs/manual_installation.md)
+- [docs/research_log.md](docs/research_log.md)
+- [docs/phase_results/](docs/phase_results/)
 
 Core scripts:
 
@@ -155,7 +155,7 @@ python scripts/train_qwen_av_reward_rl.py \
   --dtype bfloat16
 ```
 
-The exact experiment chronology is in `experiments/` and `docs/research_log.md`.
+The exact experiment chronology is in [experiments/](experiments/) and [docs/research_log.md](docs/research_log.md).
 
 ## What remains uncertain
 
