@@ -4,9 +4,9 @@ This document is the active roadmap for the project.
 
 ## Current Phase
 
-**Current phase:** Phase 11 — Controlled evaluation of reward-driven AV optimization.
+**Current phase:** Phase 12 — Final report.
 
-**Immediate next step:** evaluate the Phase 11 RL checkpoint on `test_indomain`, `test_surface_shift`, and `test_language_shift`.
+**Immediate next step:** prepare the final project report, quantitative tables, qualitative examples, limitations, and reproducibility commands.
 
 ## Completed phases
 
@@ -24,7 +24,7 @@ This document is the active roadmap for the project.
 | Phase 10a — Qwen AR/AV smoke | Complete |
 | Phase 10c — Medium 0.5B aligned Qwen run | Complete |
 | Phase 10d — Final 1.5B aligned Qwen run | Complete |
-| Phase 11 — Reward-driven AV optimization | Complete on validation |
+| Phase 11 — Reward-driven AV optimization and controlled evaluation | Complete |
 
 ## Phase 10d summary
 
@@ -38,6 +38,8 @@ Report:
 
 ## Phase 11 summary
 
+### Validation
+
 | Run | Model | Train / validation | Epochs | Best epoch | FVE | MSE | Mean MSE |
 |---|---|---:|---:|---:|---:|---:|---:|
 | AV reward RL | `Qwen/Qwen2.5-Coder-1.5B-Instruct` | 5000 / 500 | 3 | 2 | 0.457392 | 0.127274 | 0.234559 |
@@ -46,8 +48,20 @@ Report:
 
 - `docs/phase_results/phase_11_qwen15b_av_reward_rl.md`
 
-Decision: do not run more epochs with the same configuration now. The best validation result occurred at epoch 2 and epoch 3 declined. Evaluate the RL checkpoint on controlled test splits next.
+### Controlled tests
+
+| Split | FVE | MSE | Mean MSE | Result |
+|---|---:|---:|---:|---|
+| `test_indomain` | 0.400884 | 0.079164 | 0.132134 | Beats mean baseline |
+| `test_surface_shift` | 0.480390 | 0.102624 | 0.197502 | Beats mean baseline |
+| `test_language_shift` | -4.647290 | 0.107910 | 0.019108 | Below mean baseline |
+
+Report:
+
+- `docs/phase_results/phase_11_qwen15b_av_reward_rl_test_evaluation.md`
+
+Decision: Phase 11 is complete. The reward-driven AV stage improved validation performance and generalized to in-domain and surface-shift tests. Language-shift remains the main limitation.
 
 ## Phase 12 — Final report
 
-**Status:** Not started.
+**Status:** Current phase.
