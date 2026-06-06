@@ -155,3 +155,8 @@ The exact experiment chronology is in `experiments/` and `docs/research_log.md`.
 ## Final takeaway
 
 A small Qwen-based NLA can recover meaningful information from code-model activations. The reconstruction-reward stage is crucial: it moves the system beyond supervised explanation imitation and produces the strongest validation and test results. The method works well for in-domain and surface-shift code examples, while cross-language generalization remains the main open limitation.
+
+
+## License
+
+This project is released under the [MIT License](LICENSE).
