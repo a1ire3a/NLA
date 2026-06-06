@@ -6,6 +6,18 @@ The central question is:
 
 > Can a natural-language round trip recover meaningful information from internal activations of a small code model, and do the explanations remain useful under code transformations?
 
+## Where to look first
+
+The README is the short final report. The detailed execution trail is split as follows:
+
+- `docs/project_plan.md` — current roadmap and completed phases.
+- `docs/research_log.md` — central narrative log of decisions, challenges, and results.
+- `docs/phase_results/` — phase-by-phase reports with quantitative results.
+- `experiments/` — lightweight CSV experiment registries and metric summaries.
+- `docs/manual_installation.md` — setup and reproduction instructions.
+
+Large raw artifacts are intentionally not committed; the repository keeps reproducible code and compact documentation instead.
+
 ## Summary of the approach
 
 I used `Qwen/Qwen2.5-Coder-1.5B-Instruct` as the main target model and extracted residual-stream hidden states from layer 19 at the final non-padding token. The task domain is function-level code understanding.
