@@ -1,85 +1,155 @@
-# Natural Language Autoencoders for Code-Semantic Activations
+# Natural Language Autoencoders for Code-Model Activations
 
-This repository contains a compact, reproducible implementation for the KTH PhD recruitment task on **Natural Language Autoencoders (NLA)** applied to small open-source code language models.
+This repository is my submission for the KTH AI4Code PhD recruitment task. I reimplemented a compact Natural Language Autoencoder (NLA)-style pipeline and applied it to activations from a small open-source code language model.
 
-The project investigates whether a simplified NLA can translate internal activations of a code language model into natural-language explanations, and whether those explanations preserve information about code semantics under surface-level and programming-language shifts.
+The central question is:
 
-## Research question
+> Can a natural-language round trip recover meaningful information from internal activations of a small code model, and do the explanations remain useful under code transformations?
 
-Can a simplified natural language autoencoder recover meaningful information from the residual-stream activations of a small code language model, and do the resulting explanations reflect code semantics rather than only superficial syntax?
+## Summary of the approach
 
-## Implementation stance
+I used `Qwen/Qwen2.5-Coder-1.5B-Instruct` as the main target model and extracted residual-stream hidden states from layer 19 at the final non-padding token. The task domain is function-level code understanding.
 
-This repository is **not** a fork of the official NLA repository. It is a clean, small-scale implementation inspired by the official NLA work and adapted to a single-GPU AI4Code setting.
+The implemented NLA has two paired components:
 
-The official implementation is treated as a reference for terminology, architecture, and evaluation design:
+- **Activation Verbalizer (AV):** maps an activation vector to natural language by projecting the activation into the Qwen embedding space and prepending it as a pseudo-token.
+- **Activation Reconstructor (AR):** maps generated text back to an activation vector using Qwen hidden states plus a projection head.
 
-- Official NLA repository: https://github.com/kitft/natural_language_autoencoders
-- Source usage policy: `docs/source_usage.md`
-- Local-to-official design mapping: `docs/reference_mapping.md`
+The final pipeline is:
 
-If code is copied or closely adapted from the official repository, the relevant file must include explicit attribution and license notes.
-
-## Initial scope
-
-- **Target model:** `Qwen/Qwen2.5-Coder-1.5B-Instruct`
-- **Smoke-test model:** `Qwen/Qwen2.5-Coder-0.5B-Instruct`
-- **Task domain:** function-level code understanding
-- **Primary training data:** CodeSearchNet / CodeXGLUE-style Python function examples
-- **Controlled test data:** HumanEval-X / multilingual function-level code examples
-- **Activation target:** residual-stream hidden states from a selected transformer layer
-- **Primary metric:** Fraction of Variance Explained (FVE)
-
-## Repository structure
-
-```text
-.
-├── configs/                 # YAML experiment configurations
-├── data/                    # Dataset notes and local data layout; raw data is not committed
-├── docs/                    # Project plan, setup notes, phase reports, and research log
-├── experiments/             # Experiment registry CSV and lightweight metadata
-├── notebooks/               # Optional exploratory notebooks
-├── prompts/                 # Codex/agent prompts used during implementation
-├── scripts/                 # CLI entry points for each pipeline stage
-├── src/nla_code_interp/     # Python package
-├── tests/                   # Smoke and unit tests
-├── requirements.txt
-└── README.md
+```mermaid
+flowchart LR
+    A[Code prompt] --> B[Qwen2.5-Coder activation]
+    B --> C[AV: activation to text]
+    C --> D[AR: text to activation]
+    D --> E[FVE / MSE / cosine]
 ```
 
-## Pipeline overview
+I started with DistilBERT/DistilGPT2 debug baselines, then moved to Qwen-based LoRA components. The final system adds a reward-driven AV stage inspired by the original NLA RL objective:
 
 ```text
-code prompt
-  -> target code LLM
-  -> layer activation
-  -> activation verbalizer (AV): vector -> text
-  -> activation reconstructor (AR): text -> vector
-  -> reconstruction score and qualitative analysis
+reward = -MSE(L2_normalize(AR(AV(a))), L2_normalize(a))
 ```
 
-## Current status
+This is not a full reproduction of Anthropic's large-scale GRPO training setup. It is a single-GPU, resource-constrained approximation that preserves the AV/AR round-trip structure and adds a reconstruction-reward optimization stage.
 
-The debug baseline pipeline is complete end-to-end:
+## Why these choices?
+
+`Qwen2.5-Coder-1.5B` is small enough to run on my RTX 3090 24GB setup, but strong enough to represent code semantics better than tiny generic language models. I also used `Qwen2.5-Coder-0.5B` for smoke tests before running the final 1.5B experiments.
+
+The datasets were chosen to test both ordinary reconstruction and generalization:
+
+- CodeSearchNet-style Python functions for train/validation.
+- HumanEval-X-derived examples for controlled tests.
+- Surface-shift test: identifier-renaming transformations.
+- Language-shift test: cross-language Python/C++/Java-style examples.
+
+Large artifacts such as raw data, extracted activations, and checkpoints are not committed. Their paths and generation commands are documented in `docs/`.
+
+## Main quantitative results
+
+Metric: **Fraction of Variance Explained (FVE)**. A mean baseline has FVE = 0. Higher is better.
+
+### Validation progression
+
+| System | Validation FVE | Validation MSE | Notes |
+|---|---:|---:|---|
+| DistilBERT/DistilGPT2 debug loop | -0.3538 | 0.3176 | End-to-end but weak |
+| Qwen 0.5B medium after adaptation | 0.4941 | 0.1317 | Strong medium-scale signal |
+| Qwen 1.5B aligned joint run | 0.3616 | 0.1497 | Full train/validation |
+| Qwen 1.5B reward-RL AV | **0.4574** | **0.1273** | Best final validation result |
+
+The final reward-driven AV stage improved over the 1.5B aligned joint checkpoint:
 
 ```text
-activation extraction -> metrics -> AR -> AV -> full loop -> controlled test evaluation
+FVE: 0.3616 -> 0.4574
+MSE: 0.1497 -> 0.1273
 ```
 
-The DistilBERT/DistilGPT2 debug baseline successfully validated the implementation, but it did not produce final-quality reconstruction. The current project phase is the Qwen-based aligned NLA implementation:
+### Controlled test results, final reward-RL system
 
-- Qwen AR LoRA smoke test: complete
-- Qwen AV LoRA smoke test: complete
-- Qwen AV generation smoke test: complete
-- Next step: reconstruction-aware / aligned Qwen NLA training with the 0.5B model before final 1.5B runs
+| Split | FVE | MSE | Mean baseline MSE | Result |
+|---|---:|---:|---:|---|
+| `test_indomain` | **0.4009** | **0.0792** | 0.1321 | Beats mean |
+| `test_surface_shift` | **0.4804** | **0.1026** | 0.1975 | Beats mean |
+| `test_language_shift` | -4.6473 | 0.1079 | 0.0191 | Fails mean |
 
-Primary planning and reporting files:
+The system generalizes well to in-domain and surface-level code transformations, but language-shift remains difficult.
 
-- Active roadmap: `docs/project_plan.md`
-- Central narrative log: `docs/research_log.md`
-- Experiment registry: `experiments/experiment_log.csv`
-- Phase-specific reports: `docs/phase_results/`
+## Most interesting finding
 
-## Reproducibility principle
+The initial supervised AV/AR loop was not enough. A model could generate plausible-looking descriptions while still losing activation-specific information. The big improvement came when AR was adapted to AV-generated explanations, and then AV was further optimized with reconstruction reward.
 
-Large artifacts such as model weights, raw datasets, extracted activations, checkpoints, and generated reports should stay outside Git and be referenced through documented local paths or release artifacts.
+This suggests that, for small models and limited compute, the useful signal is not just natural-language imitation. The important pressure is the round-trip constraint:
+
+```text
+Can this text help reconstruct the activation that produced it?
+```
+
+## Qualitative observations
+
+The final system reconstructs activations well, but its text is not always faithful. Some generated explanations are short or generic. Example failure pattern:
+
+```text
+Target: Return package author and version as listed in init.py.
+Generated: Get the default value for an argument.
+```
+
+This is an important limitation: the system can learn activation-preserving textual codes that are not always high-quality human explanations. I therefore report reconstruction success and explanation faithfulness separately.
+
+## Reproducibility
+
+Manual setup is documented in:
+
+- `docs/manual_installation.md`
+- `docs/research_log.md`
+- `docs/phase_results/`
+
+Core scripts:
+
+- `scripts/extract_activations.py`
+- `scripts/train_qwen_ar.py`
+- `scripts/train_qwen_av.py`
+- `scripts/train_qwen_joint_nla.py`
+- `scripts/train_qwen_av_reward_rl.py`
+- `scripts/run_qwen_nla_loop.py`
+
+Representative final commands:
+
+```bash
+python scripts/train_qwen_joint_nla.py \
+  --activation_dir outputs/activations/train_qwen25_coder_15b_l19_ctx512 \
+  --validation_activation_dir outputs/activations/validation_qwen25_coder_15b_l19_ctx512 \
+  --output_dir outputs/checkpoints/qwen_joint/final_qwen15b_full_e20 \
+  --model_name_or_path Qwen/Qwen2.5-Coder-1.5B-Instruct \
+  --epochs 20 \
+  --batch_size 8 \
+  --gradient_accumulation_steps 8 \
+  --dtype bfloat16
+```
+
+```bash
+python scripts/train_qwen_av_reward_rl.py \
+  --activation_dir outputs/activations/train_qwen25_coder_15b_l19_ctx512 \
+  --validation_activation_dir outputs/activations/validation_qwen25_coder_15b_l19_ctx512 \
+  --joint_checkpoint_dir outputs/checkpoints/qwen_joint/final_qwen15b_full_e20 \
+  --output_dir outputs/checkpoints/qwen_rl/final_qwen15b_av_reward_rl \
+  --epochs 3 \
+  --batch_size 8 \
+  --gradient_accumulation_steps 2 \
+  --learning_rate_av 5e-5 \
+  --dtype bfloat16
+```
+
+The exact experiment chronology is in `experiments/` and `docs/research_log.md`.
+
+## What remains uncertain
+
+1. The language-shift setting is not solved.
+2. Reward optimization improves reconstruction, but not necessarily semantic faithfulness.
+3. This is a compact approximation of the original NLA training, not a full-scale reproduction.
+4. More robust future work would add stronger text-quality regularization, cross-language adaptation data, and a closer GRPO-style AV optimization loop.
+
+## Final takeaway
+
+A small Qwen-based NLA can recover meaningful information from code-model activations. The reconstruction-reward stage is crucial: it moves the system beyond supervised explanation imitation and produces the strongest validation and test results. The method works well for in-domain and surface-shift code examples, while cross-language generalization remains the main open limitation.
