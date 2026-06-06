@@ -1,0 +1,29 @@
+phase: phase11_qwen_av_reward_rl
+description: Reward-driven AV fine-tuning using frozen AR reconstruction reward.
+
+activation_dir: outputs/activations/train_qwen25_coder_15b_l19_ctx512
+validation_activation_dir: outputs/activations/validation_qwen25_coder_15b_l19_ctx512
+output_dir: outputs/checkpoints/qwen_rl/final_qwen15b_av_reward_rl
+joint_checkpoint_dir: outputs/checkpoints/qwen_joint/final_qwen15b_full_e3
+
+epochs: 3
+batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate_av: 0.00005
+max_new_tokens: 64
+max_ar_length: 256
+temperature: 0.7
+top_p: 0.95
+num_return_sequences: 1
+reward_normalization: batch_zscore
+
+kl_weight: 0.01
+entropy_weight: 0.0
+length_penalty_weight: 0.0
+target_text_field: reference_description
+fallback_text_fields: prompt,code
+
+dtype: bfloat16
+device: cuda
+seed: 42
+eval_every_epoch: true
