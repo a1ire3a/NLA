@@ -4,9 +4,9 @@ This document is the active roadmap for the project.
 
 ## Current Phase
 
-**Current phase:** Phase 11 — Reward-driven AV optimization.
+**Current phase:** Phase 11 — Controlled evaluation of reward-driven AV optimization.
 
-**Immediate next step:** use the Phase 10d Qwen 1.5B checkpoint as a warm start for reconstruction-reward AV training.
+**Immediate next step:** evaluate the Phase 11 RL checkpoint on `test_indomain`, `test_surface_shift`, and `test_language_shift`.
 
 ## Completed phases
 
@@ -24,18 +24,7 @@ This document is the active roadmap for the project.
 | Phase 10a — Qwen AR/AV smoke | Complete |
 | Phase 10c — Medium 0.5B aligned Qwen run | Complete |
 | Phase 10d — Final 1.5B aligned Qwen run | Complete |
-
-## Phase 10c summary
-
-| Run | FVE | MSE |
-|---|---:|---:|
-| Medium Qwen 0.5B before adaptation | -0.088272 | 0.283378 |
-| Medium Qwen 0.5B after adaptation | 0.494062 | 0.131743 |
-
-Reports:
-
-- `docs/phase_results/phase_10c_qwen_medium_aligned_run.md`
-- `docs/phase_results/phase_10c_qwen_medium_test_evaluation.md`
+| Phase 11 — Reward-driven AV optimization | Complete on validation |
 
 ## Phase 10d summary
 
@@ -47,11 +36,17 @@ Report:
 
 - `docs/phase_results/phase_10d_qwen15b_joint_run.md`
 
-Decision: the final 1.5B aligned run beats the mean baseline on full validation, but it is still an aligned supervised/alternating approximation. Proceed to Phase 11 to add reward-driven AV optimization.
+## Phase 11 summary
 
-## Phase 11 — Reward-driven AV optimization
+| Run | Model | Train / validation | Epochs | Best epoch | FVE | MSE | Mean MSE |
+|---|---|---:|---:|---:|---:|---:|---:|
+| AV reward RL | `Qwen/Qwen2.5-Coder-1.5B-Instruct` | 5000 / 500 | 3 | 2 | 0.457392 | 0.127274 | 0.234559 |
 
-**Status:** Current phase.
+Report:
+
+- `docs/phase_results/phase_11_qwen15b_av_reward_rl.md`
+
+Decision: do not run more epochs with the same configuration now. The best validation result occurred at epoch 2 and epoch 3 declined. Evaluate the RL checkpoint on controlled test splits next.
 
 ## Phase 12 — Final report
 
