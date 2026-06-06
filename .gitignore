@@ -44,4 +44,5 @@ env/
 *.npz
 *.npy
 *.parquet
+*.jsonl
 *.arrow
