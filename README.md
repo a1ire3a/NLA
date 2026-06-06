@@ -35,7 +35,9 @@ This is not a full reproduction of Anthropic's large-scale GRPO training setup. 
 
 ## Why these choices?
 
-`Qwen2.5-Coder-1.5B` is small enough to run on my RTX 3090 24GB setup, but strong enough to represent code semantics better than tiny generic language models. I also used `Qwen2.5-Coder-0.5B` for smoke tests before running the final 1.5B experiments.
+`Qwen2.5-Coder-1.5B` is small enough to run on my RTX 3090 Ti 24GB setup, but strong enough to represent code semantics better than tiny generic language models. I also used `Qwen2.5-Coder-0.5B` for smoke tests before running the final 1.5B experiments.
+
+The experiments were run on a single workstation with one NVIDIA RTX 3090 Ti 24GB GPU, a 64-core CPU, and 128GB RAM. The full hardware capacity was not always saturated, but this records the reproducibility envelope for the reported runs.
 
 The datasets were chosen to test both ordinary reconstruction and generalization:
 
