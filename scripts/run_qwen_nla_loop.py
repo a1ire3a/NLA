@@ -93,21 +93,33 @@ def validate_args(args: argparse.Namespace) -> None:
 
 
 def resolve_checkpoint_mode(args: argparse.Namespace) -> str:
-    has_split = bool(args.qwen_av_checkpoint_dir or args.qwen_ar_checkpoint_dir)
-    has_complete_split = bool(args.qwen_av_checkpoint_dir and args.qwen_ar_checkpoint_dir)
-    has_joint = bool(args.joint_checkpoint_dir)
-    has_rl = bool(args.rl_av_checkpoint_dir)
-    has_complete_rl_split = bool(args.rl_av_checkpoint_dir and args.qwen_ar_checkpoint_dir)
-    if has_joint and (has_split or has_rl):
-        raise ValueError(
-            "Use --joint_checkpoint_dir, split checkpoint args, or RL AV split args, "
-            "not multiple checkpoint modes."
-        )
-    if has_rl and args.qwen_av_checkpoint_dir:
+    qwen_av_checkpoint_dir = getattr(args, "qwen_av_checkpoint_dir", None)
+    qwen_ar_checkpoint_dir = getattr(args, "qwen_ar_checkpoint_dir", None)
+    joint_checkpoint_dir = getattr(args, "joint_checkpoint_dir", None)
+    rl_av_checkpoint_dir = getattr(args, "rl_av_checkpoint_dir", None)
+    has_split = bool(qwen_av_checkpoint_dir or qwen_ar_checkpoint_dir)
+    has_complete_split = bool(qwen_av_checkpoint_dir and qwen_ar_checkpoint_dir)
+    has_joint = bool(joint_checkpoint_dir)
+    has_rl = bool(rl_av_checkpoint_dir)
+    has_complete_rl_split = bool(rl_av_checkpoint_dir and qwen_ar_checkpoint_dir)
+    has_rl_joint = bool(rl_av_checkpoint_dir and joint_checkpoint_dir)
+    if has_rl and qwen_av_checkpoint_dir:
         raise ValueError("Use either --rl_av_checkpoint_dir or --qwen_av_checkpoint_dir.")
+    if has_rl_joint:
+        if qwen_ar_checkpoint_dir:
+            raise ValueError(
+                "Use --rl_av_checkpoint_dir with either --joint_checkpoint_dir or "
+                "--qwen_ar_checkpoint_dir, not both."
+            )
+        return "rl_joint"
+    if has_joint and has_split:
+        raise ValueError(
+            "Use either --joint_checkpoint_dir, split checkpoint args, or RL AV "
+            "checkpoint mode, not multiple checkpoint modes."
+        )
     if has_joint:
         return "joint"
-    if has_complete_rl_split and not args.qwen_av_checkpoint_dir:
+    if has_complete_rl_split:
         return "rl_split"
     if has_complete_split:
         return "split"
@@ -369,6 +381,20 @@ def load_qwen_loop_checkpoints(
             ar_adapter_trainable=False,
         )
         return joint_bundle.av_bundle, joint_bundle.ar_bundle, joint_bundle
+
+    if mode == "rl_joint":
+        av_bundle = load_qwen_av_checkpoint(
+            checkpoint_dir=Path(args.rl_av_checkpoint_dir),
+            device=device,
+            adapter_trainable=False,
+        )
+        joint_bundle = load_qwen_joint_checkpoint(
+            checkpoint_dir=Path(args.joint_checkpoint_dir),
+            device=device,
+            av_adapter_trainable=False,
+            ar_adapter_trainable=False,
+        )
+        return av_bundle, joint_bundle.ar_bundle, joint_bundle
 
     if mode == "rl_split":
         av_bundle = load_qwen_av_checkpoint(

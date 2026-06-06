@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 
+import scripts.run_qwen_nla_loop as qwen_loop
 from scripts.run_qwen_nla_loop import resolve_checkpoint_mode as resolve_loop_mode
 from scripts.train_ar import ActivationArtifact
 from scripts.train_qwen_av_reward_rl import (
@@ -186,6 +187,104 @@ def test_loop_runner_accepts_rl_av_split_mode() -> None:
     )
 
     assert resolve_loop_mode(args) == "rl_split"
+
+
+def test_loop_runner_checkpoint_modes_for_phase11() -> None:
+    assert (
+        resolve_loop_mode(
+            SimpleNamespace(
+                joint_checkpoint_dir="joint",
+                qwen_av_checkpoint_dir=None,
+                qwen_ar_checkpoint_dir=None,
+                rl_av_checkpoint_dir="rl_av",
+            )
+        )
+        == "rl_joint"
+    )
+    assert (
+        resolve_loop_mode(
+            SimpleNamespace(
+                joint_checkpoint_dir=None,
+                qwen_av_checkpoint_dir=None,
+                qwen_ar_checkpoint_dir="ar",
+                rl_av_checkpoint_dir="rl_av",
+            )
+        )
+        == "rl_split"
+    )
+    assert (
+        resolve_loop_mode(
+            SimpleNamespace(
+                joint_checkpoint_dir="joint",
+                qwen_av_checkpoint_dir=None,
+                qwen_ar_checkpoint_dir=None,
+                rl_av_checkpoint_dir=None,
+            )
+        )
+        == "joint"
+    )
+    with pytest.raises(ValueError, match="not both"):
+        resolve_loop_mode(
+            SimpleNamespace(
+                joint_checkpoint_dir="joint",
+                qwen_av_checkpoint_dir=None,
+                qwen_ar_checkpoint_dir="ar",
+                rl_av_checkpoint_dir="rl_av",
+            )
+        )
+    with pytest.raises(ValueError, match="either --rl_av_checkpoint_dir"):
+        resolve_loop_mode(
+            SimpleNamespace(
+                joint_checkpoint_dir=None,
+                qwen_av_checkpoint_dir="av",
+                qwen_ar_checkpoint_dir=None,
+                rl_av_checkpoint_dir="rl_av",
+            )
+        )
+
+
+def test_loop_runner_rl_joint_loads_rl_av_and_joint_ar(monkeypatch) -> None:
+    calls = []
+    rl_av_bundle = SimpleNamespace(
+        config={"activation_dim": 3},
+        checkpoint={"schema_version": "rl_av"},
+    )
+    joint_ar_bundle = SimpleNamespace(
+        config={"activation_dim": 3},
+        checkpoint={"schema_version": "joint_ar"},
+    )
+    joint_bundle = SimpleNamespace(
+        av_bundle=SimpleNamespace(config={"activation_dim": 3}),
+        ar_bundle=joint_ar_bundle,
+        config={"component": "qwen_joint_nla"},
+        checkpoint={"schema_version": "joint"},
+    )
+
+    def fake_load_av_checkpoint(**kwargs):
+        calls.append(("av", kwargs["checkpoint_dir"]))
+        return rl_av_bundle
+
+    def fake_load_joint_checkpoint(**kwargs):
+        calls.append(("joint", kwargs["checkpoint_dir"]))
+        return joint_bundle
+
+    monkeypatch.setattr(qwen_loop, "load_qwen_av_checkpoint", fake_load_av_checkpoint)
+    monkeypatch.setattr(qwen_loop, "load_qwen_joint_checkpoint", fake_load_joint_checkpoint)
+
+    av_bundle, ar_bundle, loaded_joint = qwen_loop.load_qwen_loop_checkpoints(
+        args=SimpleNamespace(
+            joint_checkpoint_dir="joint_dir",
+            qwen_av_checkpoint_dir=None,
+            qwen_ar_checkpoint_dir=None,
+            rl_av_checkpoint_dir="rl_av_dir",
+        ),
+        device=torch.device("cpu"),
+    )
+
+    assert calls == [("av", Path("rl_av_dir")), ("joint", Path("joint_dir"))]
+    assert av_bundle is rl_av_bundle
+    assert ar_bundle is joint_ar_bundle
+    assert loaded_joint is joint_bundle
 
 
 def test_manifest_schema() -> None:
