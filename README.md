@@ -1,6 +1,6 @@
 # Natural Language Autoencoders for Code-Model Activations
 
-This repository is my submission for the KTH AI4Code PhD recruitment task. I reimplemented a compact Natural Language Autoencoder (NLA)-style pipeline and applied it to activations from a small open-source code language model.
+I reimplemented a compact Natural Language Autoencoder (NLA)-style pipeline and applied it to activations from a small open-source code language model.
 
 The central question is:
 
