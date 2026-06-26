@@ -49,7 +49,7 @@ The repository should not track:
 
 ### Objective
 
-Turn the recruitment task into a focused, testable AI4Code interpretability project.
+Define a focused, testable AI4Code interpretability project based on Natural Language Autoencoders.
 
 ### Decisions
 
